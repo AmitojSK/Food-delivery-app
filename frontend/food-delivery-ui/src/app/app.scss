@@ -1,0 +1,433 @@
+.app-shell {
+  min-height: 100vh;
+  padding: 28px;
+  background: #f6f7f9;
+  color: #1f2933;
+}
+
+.app-header,
+.section-heading,
+.cart-total,
+.cart-line,
+.line-item,
+.total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.app-header {
+  margin: 0 auto 24px;
+  max-width: 1240px;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: #0f766e;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+h3,
+p {
+  letter-spacing: 0;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+}
+
+h1 {
+  font-size: 2.75rem;
+  line-height: 1.04;
+}
+
+h2 {
+  font-size: 1.35rem;
+}
+
+h3 {
+  font-size: 1.05rem;
+}
+
+p {
+  margin: 0;
+}
+
+button {
+  border: 0;
+  border-radius: 6px;
+  min-height: 42px;
+  padding: 0 16px;
+  background: #0f766e;
+  color: #ffffff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.secondary,
+.mode-switch button,
+.admin-nav button {
+  background: #ffffff;
+  color: #253241;
+  border: 1px solid #d7dee8;
+}
+
+.mode-switch {
+  display: inline-grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 8px;
+  background: #e8eef4;
+}
+
+.mode-switch button.active,
+.admin-nav button.active {
+  background: #15212e;
+  color: #ffffff;
+  border-color: #15212e;
+}
+
+.consumer-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 22px;
+  max-width: 1240px;
+  margin: 0 auto;
+}
+
+.browse,
+.cart-panel,
+.panel,
+.admin-sidebar {
+  background: #ffffff;
+  border: 1px solid #dfe5ec;
+  border-radius: 8px;
+}
+
+.browse,
+.panel,
+.cart-panel,
+.admin-sidebar {
+  padding: 20px;
+}
+
+.restaurant-grid,
+.menu-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(240px, 1fr));
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.restaurant-card,
+.menu-item {
+  display: grid;
+  gap: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+  background: #ffffff;
+}
+
+.restaurant-art {
+  height: 118px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: #12343b;
+  color: #f8fafc;
+}
+
+.restaurant-art span {
+  font-size: 3rem;
+  font-weight: 900;
+}
+
+.muted {
+  color: #66788a;
+}
+
+.category {
+  color: #ad5d14;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.price-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cart-panel {
+  align-self: start;
+  position: sticky;
+  top: 18px;
+  display: grid;
+  gap: 16px;
+}
+
+.cart-line {
+  border-bottom: 1px solid #edf1f5;
+  padding-bottom: 12px;
+}
+
+.cart-line div:first-child {
+  display: grid;
+  gap: 4px;
+}
+
+.cart-line span {
+  color: #66788a;
+}
+
+.quantity {
+  display: grid;
+  grid-template-columns: 30px 28px 30px;
+  align-items: center;
+  text-align: center;
+}
+
+.quantity button,
+.line-item button {
+  min-height: 30px;
+  width: 30px;
+  padding: 0;
+  background: #e8eef4;
+  color: #253241;
+}
+
+.cart-total {
+  border-top: 1px solid #dfe5ec;
+  padding-top: 14px;
+}
+
+.checkout {
+  display: grid;
+  gap: 12px;
+}
+
+.confirmation {
+  display: grid;
+  gap: 4px;
+  border-radius: 8px;
+  padding: 14px;
+  background: #e7f6ec;
+  color: #14532d;
+}
+
+.admin-layout {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 20px;
+  max-width: 1240px;
+  margin: 0 auto;
+}
+
+.admin-sidebar {
+  align-self: start;
+  display: grid;
+  gap: 16px;
+}
+
+.admin-nav {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-nav button {
+  text-align: left;
+}
+
+.admin-workspace {
+  min-width: 0;
+}
+
+.panel {
+  margin-bottom: 18px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(180px, 1fr));
+  gap: 14px;
+  align-items: end;
+  margin-bottom: 20px;
+}
+
+.form-grid.wide {
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+}
+
+label {
+  display: grid;
+  gap: 6px;
+  color: #4b5b6b;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #cdd6e1;
+  border-radius: 6px;
+  min-height: 42px;
+  padding: 9px 11px;
+  color: #1f2933;
+  background: #ffffff;
+  font: inherit;
+}
+
+textarea {
+  resize: vertical;
+}
+
+.span-2 {
+  grid-column: span 2;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 13px 12px;
+  text-align: left;
+  border-bottom: 1px solid #e6ebf1;
+  vertical-align: middle;
+}
+
+th {
+  color: #586879;
+  font-size: 0.76rem;
+  text-transform: uppercase;
+}
+
+.badge {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 4px 9px;
+  background: #e6f4f1;
+  color: #0f766e;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.notice,
+.error,
+.state {
+  max-width: 1240px;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 0 auto 14px;
+  font-weight: 800;
+}
+
+.notice {
+  background: #e7f6ec;
+  color: #166534;
+}
+
+.error {
+  background: #fff0f0;
+  color: #b42318;
+}
+
+.state {
+  background: #eef5ff;
+  color: #1d4ed8;
+}
+
+.empty {
+  grid-column: 1 / -1;
+  border: 1px dashed #cdd6e1;
+  border-radius: 8px;
+  padding: 26px;
+  color: #66788a;
+}
+
+.order-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 18px;
+}
+
+.summary {
+  border: 1px solid #dfe5ec;
+  border-radius: 8px;
+  padding: 16px;
+  align-self: start;
+}
+
+.line-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  padding: 10px 0;
+  border-bottom: 1px solid #edf1f5;
+}
+
+.total {
+  margin: 16px 0 0;
+}
+
+@media (max-width: 980px) {
+  .app-shell {
+    padding: 18px;
+  }
+
+  .app-header,
+  .section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .consumer-grid,
+  .admin-layout,
+  .order-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .cart-panel {
+    position: static;
+  }
+
+  .restaurant-grid,
+  .menu-grid,
+  .form-grid,
+  .form-grid.wide {
+    grid-template-columns: 1fr;
+  }
+
+  .span-2 {
+    grid-column: span 1;
+  }
+
+  h1 {
+    font-size: 2.15rem;
+  }
+}

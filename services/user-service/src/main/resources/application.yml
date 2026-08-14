@@ -1,0 +1,32 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: user-service
+  datasource:
+    url: ${USER_SERVICE_DB_URL:jdbc:mysql://localhost:3307/user_service_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${USER_SERVICE_DB_USERNAME:user_service}
+    password: ${USER_SERVICE_DB_PASSWORD:user_service_password}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: true
