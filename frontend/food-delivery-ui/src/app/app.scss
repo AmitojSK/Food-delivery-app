@@ -93,6 +93,15 @@ button:disabled {
   background: #e8eef4;
 }
 
+.account-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #4b5b6b;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
 .mode-switch button.active,
 .admin-nav button.active {
   background: #15212e;
@@ -106,6 +115,40 @@ button:disabled {
   gap: 22px;
   max-width: 1240px;
   margin: 0 auto;
+}
+
+.auth-card {
+  width: min(100%, 560px);
+  display: grid;
+  gap: 18px;
+  margin: 52px auto;
+  padding: 28px;
+  border: 1px solid #dfe5ec;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.auth-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.auth-tabs button.active {
+  background: #15212e;
+  border-color: #15212e;
+  color: #ffffff;
+}
+
+.auth-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.auth-form label:last-of-type,
+.auth-form button {
+  grid-column: 1 / -1;
 }
 
 .browse,
@@ -406,6 +449,11 @@ th {
     flex-direction: column;
   }
 
+  .account-actions {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
   .consumer-grid,
   .admin-layout,
   .order-layout {
@@ -420,6 +468,10 @@ th {
   .menu-grid,
   .form-grid,
   .form-grid.wide {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-form {
     grid-template-columns: 1fr;
   }
 

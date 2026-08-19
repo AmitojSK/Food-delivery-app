@@ -3,11 +3,13 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, throwError } from 'rxjs';
 import {
   ApiErrorResponse,
+  AuthenticationResponse,
   CreateFoodItemRequest,
   CreateOrderRequest,
   CreateRestaurantRequest,
   CreateUserRequest,
   FoodItem,
+  LoginRequest,
   Order,
   Restaurant,
   User
@@ -16,6 +18,18 @@ import {
 @Injectable({ providedIn: 'root' })
 export class FoodDeliveryApi {
   private readonly http = inject(HttpClient);
+
+  register(request: CreateUserRequest): Observable<AuthenticationResponse> {
+    return this.http
+      .post<AuthenticationResponse>('/user-api/api/v1/auth/register', request)
+      .pipe(catchError(handleApiError));
+  }
+
+  login(request: LoginRequest): Observable<AuthenticationResponse> {
+    return this.http
+      .post<AuthenticationResponse>('/user-api/api/v1/auth/login', request)
+      .pipe(catchError(handleApiError));
+  }
 
   listUsers(): Observable<User[]> {
     return this.http.get<User[]>('/user-api/api/v1/users').pipe(catchError(handleApiError));

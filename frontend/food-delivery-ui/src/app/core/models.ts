@@ -4,6 +4,7 @@ export interface User {
   lastName: string;
   email: string;
   phoneNumber: string;
+  role: 'CUSTOMER' | 'ADMIN';
   active: boolean;
   createdAt: string;
   updatedAt: string;
@@ -14,6 +15,19 @@ export interface CreateUserRequest {
   lastName: string;
   email: string;
   phoneNumber: string;
+  password: string;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface AuthenticationResponse {
+  accessToken: string;
+  tokenType: 'Bearer';
+  expiresIn: number;
+  user: User;
 }
 
 export interface Restaurant {

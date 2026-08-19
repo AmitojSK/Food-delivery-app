@@ -3,6 +3,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Observable, catchError, finalize, forkJoin, of } from 'rxjs';
 import { FoodDeliveryApi } from './core/food-delivery-api';
+import { AuthSession } from './core/auth-session';
 import {
   CreateOrderItemRequest,
   CreateOrderRequest,
@@ -14,6 +15,7 @@ import {
 
 type AppMode = 'consumer' | 'admin';
 type AdminPanel = 'users' | 'restaurants' | 'catalogue' | 'orders';
+type AuthScreen = 'login' | 'register';
 
 interface CartItem extends CreateOrderItemRequest {
   restaurantId: number;
@@ -27,9 +29,11 @@ interface CartItem extends CreateOrderItemRequest {
 })
 export class App {
   private readonly api = inject(FoodDeliveryApi);
+  protected readonly auth = inject(AuthSession);
   private readonly fb = inject(FormBuilder);
 
   protected readonly mode = signal<AppMode>('consumer');
+  protected readonly authScreen = signal<AuthScreen>('login');
   protected readonly activePanel = signal<AdminPanel>('users');
   protected readonly selectedRestaurantId = signal<number | null>(null);
   protected readonly users = signal<User[]>([]);
@@ -67,7 +71,21 @@ export class App {
     firstName: ['', [Validators.required, Validators.maxLength(80)]],
     lastName: ['', [Validators.required, Validators.maxLength(80)]],
     email: ['', [Validators.required, Validators.email, Validators.maxLength(160)]],
-    phoneNumber: ['', [Validators.required, Validators.pattern(/^[0-9+\-() ]{7,20}$/)]]
+    phoneNumber: ['', [Validators.required, Validators.pattern(/^[0-9+\-() ]{7,20}$/)]],
+    password: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(72)]]
+  });
+
+  protected readonly loginForm = this.fb.nonNullable.group({
+    email: ['', [Validators.required, Validators.email]],
+    password: ['', Validators.required]
+  });
+
+  protected readonly registerForm = this.fb.nonNullable.group({
+    firstName: ['', [Validators.required, Validators.maxLength(80)]],
+    lastName: ['', [Validators.required, Validators.maxLength(80)]],
+    email: ['', [Validators.required, Validators.email, Validators.maxLength(160)]],
+    phoneNumber: ['', [Validators.required, Validators.pattern(/^[0-9+\-() ]{7,20}$/)]],
+    password: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(72)]]
   });
 
   protected readonly restaurantForm = this.fb.nonNullable.group({
@@ -96,18 +114,63 @@ export class App {
     quantity: [1, [Validators.required, Validators.min(1)]]
   });
 
-  protected readonly checkoutForm = this.fb.nonNullable.group({
-    userId: [0, [Validators.required, Validators.min(1)]]
-  });
-
   constructor() {
-    this.loadAll();
+    this.loadPublicData();
+    if (this.auth.isAdmin()) {
+      this.loadAdminData();
+    }
   }
 
   protected setMode(mode: AppMode): void {
+    if (mode === 'admin' && !this.auth.isAdmin()) {
+      this.error.set('An administrator account is required to open the service console.');
+      return;
+    }
     this.mode.set(mode);
     this.notice.set('');
     this.error.set('');
+    if (mode === 'admin') {
+      this.loadAdminData();
+    }
+  }
+
+  protected setAuthScreen(screen: AuthScreen): void {
+    this.authScreen.set(screen);
+    this.error.set('');
+  }
+
+  protected login(): void {
+    if (this.loginForm.invalid) {
+      this.loginForm.markAllAsTouched();
+      return;
+    }
+    this.saving.set(true);
+    this.error.set('');
+    this.api.login(this.loginForm.getRawValue()).pipe(finalize(() => this.saving.set(false))).subscribe({
+      next: response => this.completeAuthentication(response),
+      error: (error: Error) => this.error.set(error.message)
+    });
+  }
+
+  protected register(): void {
+    if (this.registerForm.invalid) {
+      this.registerForm.markAllAsTouched();
+      return;
+    }
+    this.saving.set(true);
+    this.error.set('');
+    this.api.register(this.registerForm.getRawValue()).pipe(finalize(() => this.saving.set(false))).subscribe({
+      next: response => this.completeAuthentication(response),
+      error: (error: Error) => this.error.set(error.message)
+    });
+  }
+
+  protected logout(): void {
+    this.auth.clear();
+    this.mode.set('consumer');
+    this.users.set([]);
+    this.orders.set([]);
+    this.notice.set('You have been signed out.');
   }
 
   protected switchPanel(panel: AdminPanel): void {
@@ -130,24 +193,36 @@ export class App {
     this.cartItems.set([]);
   }
 
-  protected loadAll(): void {
+  protected loadPublicData(): void {
     this.loading.set(true);
     this.error.set('');
 
     forkJoin({
-      users: this.loadResource('users', this.api.listUsers()),
       restaurants: this.loadResource('restaurants', this.api.listRestaurants()),
       foodItems: this.loadResource('food items', this.api.listFoodItems())
     })
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
-        next: ({ users, restaurants, foodItems }) => {
-          this.users.set(users);
+        next: ({ restaurants, foodItems }) => {
           this.restaurants.set(restaurants);
           this.foodItems.set(foodItems);
         },
         error: (error: Error) => this.error.set(error.message)
       });
+  }
+
+  protected loadAdminData(): void {
+    if (!this.auth.isAdmin()) return;
+    this.loading.set(true);
+    forkJoin({
+      users: this.loadResource('users', this.api.listUsers()),
+      restaurants: this.loadResource('restaurants', this.api.listRestaurants()),
+      foodItems: this.loadResource('food items', this.api.listFoodItems())
+    }).pipe(finalize(() => this.loading.set(false))).subscribe(({ users, restaurants, foodItems }) => {
+      this.users.set(users);
+      this.restaurants.set(restaurants);
+      this.foodItems.set(foodItems);
+    });
   }
 
   protected loadOrders(): void {
@@ -170,7 +245,6 @@ export class App {
 
     this.save(() => this.api.createUser(this.userForm.getRawValue()), user => {
       this.users.update(users => [user, ...users]);
-      this.checkoutForm.patchValue({ userId: user.id });
       this.userForm.reset();
       this.notice.set('User created');
     });
@@ -242,16 +316,15 @@ export class App {
 
   protected placeConsumerOrder(): void {
     const selectedRestaurant = this.selectedRestaurant();
-    const { userId } = this.checkoutForm.getRawValue();
+    const user = this.auth.user();
 
-    if (!selectedRestaurant || userId < 1 || this.cartItems().length === 0) {
-      this.checkoutForm.markAllAsTouched();
-      this.error.set('Select a customer and add at least one item to the cart.');
+    if (!selectedRestaurant || !user || this.cartItems().length === 0) {
+      this.error.set('Sign in and add at least one item to the cart before placing an order.');
       return;
     }
 
     const request: CreateOrderRequest = {
-      userId,
+      userId: user.id,
       restaurantId: selectedRestaurant.id,
       items: this.cartItems().map(({ restaurantId, ...item }) => item)
     };
@@ -334,6 +407,16 @@ export class App {
         next: onSuccess,
         error: (error: Error) => this.error.set(error.message)
       });
+  }
+
+  private completeAuthentication(response: import('./core/models').AuthenticationResponse): void {
+    this.auth.start(response);
+    this.loginForm.reset();
+    this.registerForm.reset();
+    this.notice.set(`Welcome, ${response.user.firstName}.`);
+    if (this.auth.isAdmin()) {
+      this.loadAdminData();
+    }
   }
 
   private loadResource<T>(resourceName: string, request: Observable<T[]>): Observable<T[]> {
