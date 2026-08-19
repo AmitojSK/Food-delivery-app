@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,6 +29,7 @@ public class FoodItemController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<FoodItemResponse> createFoodItem(@Valid @RequestBody CreateFoodItemRequest request) {
         FoodItemResponse foodItem = foodItemService.createFoodItem(request);
         return ResponseEntity.created(URI.create("/api/v1/food-items/" + foodItem.id())).body(foodItem);
@@ -48,6 +50,7 @@ public class FoodItemController {
     }
 
     @PatchMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<FoodItemResponse> updateFoodItem(
             @PathVariable Long id,
             @Valid @RequestBody UpdateFoodItemRequest request

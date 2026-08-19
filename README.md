@@ -180,3 +180,10 @@ curl -X POST http://localhost:8081/api/v1/auth/login \
 New registrations always receive the `CUSTOMER` role. Customer tokens can read and update only their own user record; an `ADMIN` token can list, create, and manage all user records. Set a unique Base64-encoded `JWT_SECRET` in deployed environments.
 
 To promote a pre-registered account during local setup, start user-service once with `BOOTSTRAP_ADMIN_ENABLED=true`, `BOOTSTRAP_ADMIN_EMAIL`, and `BOOTSTRAP_ADMIN_PASSWORD`. The bootstrap is disabled by default and will fail fast if its credentials are missing.
+
+## Iteration 4, Step 2: Service authorization
+
+All backend services now validate the JWT issued by `user-service`. Configure the same Base64-encoded `JWT_SECRET` for user-service, restaurant-service, food-catalogue-service, and order-service in every environment.
+
+- Restaurant and food-item reads are public; their create and update operations require `ADMIN`.
+- All order endpoints require authentication. Customers can create orders only for their own token user ID and can read only their own orders. `ADMIN` can read all orders, create orders for any user, and update order status.
