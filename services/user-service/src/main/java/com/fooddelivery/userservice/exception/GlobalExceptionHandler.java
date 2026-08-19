@@ -23,6 +23,13 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.CONFLICT, exception.getMessage(), request, Map.of());
     }
 
+    @ExceptionHandler(AuthenticationFailedException.class)
+    ResponseEntity<ApiErrorResponse> handleAuthenticationFailure(
+            AuthenticationFailedException exception, HttpServletRequest request
+    ) {
+        return buildResponse(HttpStatus.UNAUTHORIZED, exception.getMessage(), request, Map.of());
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     ResponseEntity<ApiErrorResponse> handleValidation(MethodArgumentNotValidException exception, HttpServletRequest request) {
         Map<String, String> fieldErrors = new LinkedHashMap<>();

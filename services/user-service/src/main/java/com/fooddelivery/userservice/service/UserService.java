@@ -11,16 +11,19 @@ import com.fooddelivery.userservice.repository.UserRepository;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Service
 public class UserService {
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository, UserMapper userMapper) {
+    public UserService(UserRepository userRepository, UserMapper userMapper, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.userMapper = userMapper;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Transactional
@@ -31,6 +34,7 @@ public class UserService {
         ensurePhoneNumberAvailable(phoneNumber, null);
 
         User user = userMapper.toEntity(request);
+        user.setPasswordHash(passwordEncoder.encode(request.password()));
         return userMapper.toResponse(userRepository.save(user));
     }
 

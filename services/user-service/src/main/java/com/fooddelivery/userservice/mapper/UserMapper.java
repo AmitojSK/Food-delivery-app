@@ -24,6 +24,7 @@ public class UserMapper {
                 user.getLastName(),
                 user.getEmail(),
                 user.getPhoneNumber(),
+                user.getRole().name(),
                 user.isActive(),
                 user.getCreatedAt(),
                 user.getUpdatedAt()

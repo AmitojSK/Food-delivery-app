@@ -8,6 +8,7 @@ public record UserResponse(
         String lastName,
         String email,
         String phoneNumber,
+        String role,
         boolean active,
         Instant createdAt,
         Instant updatedAt

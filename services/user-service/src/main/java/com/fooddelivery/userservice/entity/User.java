@@ -2,6 +2,8 @@ package com.fooddelivery.userservice.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -29,6 +31,13 @@ public class User {
 
     @Column(name = "phone_number", nullable = false, unique = true, length = 20)
     private String phoneNumber;
+
+    @Column(name = "password_hash", nullable = false, length = 100)
+    private String passwordHash;
+
+    @Column(nullable = false, length = 20)
+    @Enumerated(EnumType.STRING)
+    private UserRole role = UserRole.CUSTOMER;
 
     @Column(nullable = false)
     private boolean active = true;
@@ -85,6 +94,22 @@ public class User {
 
     public void setPhoneNumber(String phoneNumber) {
         this.phoneNumber = phoneNumber;
+    }
+
+    public String getPasswordHash() {
+        return passwordHash;
+    }
+
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
+    }
+
+    public UserRole getRole() {
+        return role;
+    }
+
+    public void setRole(UserRole role) {
+        this.role = role;
     }
 
     public boolean isActive() {

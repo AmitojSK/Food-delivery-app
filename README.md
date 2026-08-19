@@ -87,12 +87,12 @@ After the services start, they should appear in the Eureka dashboard as:
 
 ## API Examples
 
-Create user:
+Register user:
 
 ```bash
-curl -X POST http://localhost:8081/api/v1/users \
+curl -X POST http://localhost:8081/api/v1/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"firstName":"Asha","lastName":"Rao","email":"asha@example.com","phoneNumber":"+91 9876543210"}'
+  -d '{"firstName":"Asha","lastName":"Rao","email":"asha@example.com","phoneNumber":"+91 9876543210","password":"safe-password"}'
 ```
 
 Create restaurant:
@@ -160,3 +160,23 @@ The Angular app calls these proxy paths:
 - `/order-api` -> `http://localhost:8084`
 
 For this iteration, the UI talks to services through the Angular proxy. A later API gateway iteration can replace these service-specific proxy routes with a single backend entry point.
+
+## Iteration 4, Step 1: User authentication
+
+`user-service` now exposes public authentication endpoints:
+
+```bash
+# Register a customer. Passwords must be 8-72 characters.
+curl -X POST http://localhost:8081/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"firstName":"Asha","lastName":"Rao","email":"asha@example.com","phoneNumber":"+91 9876543210","password":"safe-password"}'
+
+# Sign in and receive a one-hour Bearer JWT.
+curl -X POST http://localhost:8081/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"asha@example.com","password":"safe-password"}'
+```
+
+New registrations always receive the `CUSTOMER` role. Customer tokens can read and update only their own user record; an `ADMIN` token can list, create, and manage all user records. Set a unique Base64-encoded `JWT_SECRET` in deployed environments.
+
+To promote a pre-registered account during local setup, start user-service once with `BOOTSTRAP_ADMIN_ENABLED=true`, `BOOTSTRAP_ADMIN_EMAIL`, and `BOOTSTRAP_ADMIN_PASSWORD`. The bootstrap is disabled by default and will fail fast if its credentials are missing.

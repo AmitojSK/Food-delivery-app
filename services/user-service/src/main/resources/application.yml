@@ -30,3 +30,13 @@ eureka:
       defaultZone: ${EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE:http://localhost:8761/eureka/}
   instance:
     prefer-ip-address: true
+
+security:
+  jwt:
+    # Supply a distinct, Base64-encoded 256-bit secret outside local development.
+    secret: ${JWT_SECRET:c3ByaW5nLWJvb3QtdXNlci1zZXJ2aWNlLWxvY2FsLWRldmVsb3BtZW50LXNlY3JldC0yMDI2}
+    expiration: ${JWT_EXPIRATION:3600000}
+  bootstrap-admin:
+    enabled: ${BOOTSTRAP_ADMIN_ENABLED:false}
+    email: ${BOOTSTRAP_ADMIN_EMAIL:}
+    password: ${BOOTSTRAP_ADMIN_PASSWORD:}
