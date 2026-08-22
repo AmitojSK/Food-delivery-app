@@ -70,9 +70,17 @@ cd services/order-service
 mvn spring-boot:run
 ```
 
+API gateway (start after the discovery server and backend services):
+
+```bash
+cd services/api-gateway
+mvn spring-boot:run
+```
+
 Service ports:
 
 - Discovery server: `http://localhost:8761`
+- API gateway: `http://localhost:8080`
 - User service: `http://localhost:8081`
 - Restaurant service: `http://localhost:8082`
 - Food catalogue service: `http://localhost:8083`
@@ -152,14 +160,14 @@ Open:
 http://localhost:4200
 ```
 
-The Angular app calls these proxy paths:
+The Angular app calls the gateway through these proxy paths:
 
-- `/user-api` -> `http://localhost:8081`
-- `/restaurant-api` -> `http://localhost:8082`
-- `/catalogue-api` -> `http://localhost:8083`
-- `/order-api` -> `http://localhost:8084`
+- `/user-api` -> `http://localhost:8080` -> `USER-SERVICE`
+- `/restaurant-api` -> `http://localhost:8080` -> `RESTAURANT-SERVICE`
+- `/catalogue-api` -> `http://localhost:8080` -> `FOOD-CATALOGUE-SERVICE`
+- `/order-api` -> `http://localhost:8080` -> `ORDER-SERVICE`
 
-For this iteration, the UI talks to services through the Angular proxy. A later API gateway iteration can replace these service-specific proxy routes with a single backend entry point.
+The UI uses its Angular proxy only to reach the gateway. The gateway discovers backend services through Eureka, validates protected JWT requests, and forwards them to the appropriate service.
 
 ## Iteration 4, Step 1: User authentication
 
@@ -187,3 +195,7 @@ All backend services now validate the JWT issued by `user-service`. Configure th
 
 - Restaurant and food-item reads are public; their create and update operations require `ADMIN`.
 - All order endpoints require authentication. Customers can create orders only for their own token user ID and can read only their own orders. `ADMIN` can read all orders, create orders for any user, and update order status.
+
+## Iteration 4, Step 3: API gateway
+
+`services/api-gateway` provides the single local backend entry point on port `8080`. It routes the existing `/user-api`, `/restaurant-api`, `/catalogue-api`, and `/order-api` prefixes using Eureka service discovery. It permits public registration, login, restaurant browsing, and food-item browsing; all other routes require a valid JWT before they are forwarded.

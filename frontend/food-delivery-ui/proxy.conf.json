@@ -1,34 +1,22 @@
 {
   "/user-api": {
-    "target": "http://localhost:8081",
+    "target": "http://localhost:8080",
     "secure": false,
-    "changeOrigin": true,
-    "pathRewrite": {
-      "^/user-api": ""
-    }
+    "changeOrigin": true
   },
   "/restaurant-api": {
-    "target": "http://localhost:8082",
+    "target": "http://localhost:8080",
     "secure": false,
-    "changeOrigin": true,
-    "pathRewrite": {
-      "^/restaurant-api": ""
-    }
+    "changeOrigin": true
   },
   "/catalogue-api": {
-    "target": "http://localhost:8083",
+    "target": "http://localhost:8080",
     "secure": false,
-    "changeOrigin": true,
-    "pathRewrite": {
-      "^/catalogue-api": ""
-    }
+    "changeOrigin": true
   },
   "/order-api": {
-    "target": "http://localhost:8084",
+    "target": "http://localhost:8080",
     "secure": false,
-    "changeOrigin": true,
-    "pathRewrite": {
-      "^/order-api": ""
-    }
+    "changeOrigin": true
   }
 }

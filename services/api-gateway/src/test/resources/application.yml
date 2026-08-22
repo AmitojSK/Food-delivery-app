@@ -1,0 +1,12 @@
+spring:
+  cloud:
+    discovery:
+      enabled: false
+
+eureka:
+  client:
+    enabled: false
+
+security:
+  jwt:
+    secret: c3ByaW5nLWJvb3QtdXNlci1zZXJ2aWNlLXRlc3Qtc2VjcmV0LTIwMjY=
