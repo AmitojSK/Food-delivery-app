@@ -2,6 +2,12 @@ spring:
   cloud:
     discovery:
       enabled: false
+    gateway:
+      routes:
+        - id: test-order-route
+          uri: http://localhost:9
+          predicates:
+            - Path=/order-api/**
 
 eureka:
   client:
