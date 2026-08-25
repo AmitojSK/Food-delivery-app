@@ -67,6 +67,11 @@ services:
       - "27017:27017"
     volumes:
       - order_service_mongodb_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   # ---------- backend services ----------
 
@@ -152,7 +157,7 @@ services:
     container_name: order-service
     depends_on:
       order-service-mongodb:
-        condition: service_started
+        condition: service_healthy
       discovery-server:
         condition: service_healthy
     environment:
