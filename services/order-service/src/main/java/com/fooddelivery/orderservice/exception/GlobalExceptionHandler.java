@@ -23,6 +23,11 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.NOT_FOUND, exception.getMessage(), request, Map.of());
     }
 
+    @ExceptionHandler(OrderValidationException.class)
+    ResponseEntity<ApiErrorResponse> handleOrderValidation(OrderValidationException exception, HttpServletRequest request) {
+        return buildResponse(HttpStatus.UNPROCESSABLE_ENTITY, exception.getMessage(), request, Map.of());
+    }
+
     @ExceptionHandler(AccessDeniedException.class)
     ResponseEntity<ApiErrorResponse> handleAccessDenied(AccessDeniedException exception, HttpServletRequest request) {
         return buildResponse(HttpStatus.FORBIDDEN, "You do not have permission to access this resource", request, Map.of());

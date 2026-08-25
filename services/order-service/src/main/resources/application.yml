@@ -6,7 +6,7 @@ spring:
     name: order-service
   data:
     mongodb:
-      uri: mongodb://order_service:order_service_password@[::1]:27017/order_service_db?authSource=admin
+      uri: ${ORDER_SERVICE_MONGODB_URI:mongodb://order_service:order_service_password@[::1]:27017/order_service_db?authSource=admin}
 
 management:
   endpoints:
