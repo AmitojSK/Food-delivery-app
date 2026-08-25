@@ -16,6 +16,10 @@ export class App {
   private readonly cart = inject(CartService);
   private readonly router = inject(Router);
 
+  protected isAdminRoute(): boolean {
+    return this.router.url.startsWith('/admin');
+  }
+
   protected logout(): void {
     this.auth.clear();
     this.cart.clear();

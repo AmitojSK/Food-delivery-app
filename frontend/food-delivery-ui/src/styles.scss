@@ -6,8 +6,8 @@ html {
 body {
   min-height: 100%;
   margin: 0;
-  background: #f6f7f9;
-  color: #1f2933;
+  background: #faf9f7;
+  color: #1a1a2e;
 }
 
 * {
@@ -23,9 +23,9 @@ textarea {
 
 .app-shell {
   min-height: 100vh;
-  padding: 28px;
-  background: #f6f7f9;
-  color: #1f2933;
+  padding: 0;
+  background: #faf9f7;
+  color: #1a1a2e;
 }
 
 .app-header,
@@ -41,16 +41,22 @@ textarea {
 }
 
 .app-header {
-  margin: 0 auto 24px;
-  max-width: 1240px;
+  margin: 0 auto;
+  max-width: 1280px;
+  padding: 20px 32px;
+  background: #ffffff;
+  border-bottom: 1px solid #f0ece6;
+  border-radius: 0 0 16px 16px;
+  box-shadow: 0 2px 12px rgba(26, 26, 46, 0.04);
+  margin-bottom: 28px;
 }
 
 .eyebrow {
-  margin: 0 0 6px;
-  color: #0f766e;
-  font-size: 0.78rem;
+  margin: 0 0 4px;
+  color: #e85d04;
+  font-size: 0.72rem;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
@@ -59,56 +65,81 @@ h2,
 h3,
 p {
   margin: 0;
-  letter-spacing: 0;
+  letter-spacing: -0.01em;
 }
 
 h1 {
-  font-size: 2.75rem;
-  line-height: 1.04;
+  font-size: 2.2rem;
+  line-height: 1.1;
+  font-weight: 900;
+  color: #1a1a2e;
 }
 
 h2 {
-  font-size: 1.35rem;
+  font-size: 1.3rem;
+  font-weight: 700;
 }
 
 h3 {
   font-size: 1.05rem;
+  font-weight: 700;
 }
 
 button {
   border: 0;
-  border-radius: 6px;
-  min-height: 42px;
-  padding: 0 16px;
-  background: #0f766e;
+  border-radius: 10px;
+  min-height: 44px;
+  padding: 0 20px;
+  background: linear-gradient(135deg, #e85d04 0%, #dc2f02 100%);
   color: #ffffff;
-  font-weight: 800;
+  font-weight: 700;
   cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+
+button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(232, 93, 4, 0.3);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 button:disabled {
   cursor: not-allowed;
-  opacity: 0.65;
+  opacity: 0.55;
 }
 
 .secondary,
 .mode-switch button,
 .admin-nav button {
   background: #ffffff;
-  color: #253241;
-  border: 1px solid #d7dee8;
+  color: #3d3d5c;
+  border: 1.5px solid #e8e4df;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.secondary:hover,
+.mode-switch button:hover,
+.admin-nav button:hover {
+  background: #fef7f0;
+  border-color: #e85d04;
+  color: #e85d04;
+  transform: none;
+  box-shadow: none;
 }
 
 .auth-card {
-  width: min(100%, 560px);
+  width: min(100%, 520px);
   display: grid;
-  gap: 18px;
-  margin: 52px auto;
-  padding: 28px;
-  border: 1px solid #dfe5ec;
-  border-radius: 10px;
+  gap: 20px;
+  margin: 60px auto;
+  padding: 36px;
+  border: 1px solid #f0ece6;
+  border-radius: 16px;
   background: #ffffff;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 12px 40px rgba(26, 26, 46, 0.06);
 }
 
 .auth-tabs {
@@ -118,8 +149,8 @@ button:disabled {
 }
 
 .auth-tabs button.active {
-  background: #15212e;
-  border-color: #15212e;
+  background: #1a1a2e;
+  border-color: #1a1a2e;
   color: #ffffff;
 }
 
@@ -137,54 +168,69 @@ button:disabled {
 .auth-form label {
   display: grid;
   gap: 6px;
-  color: #4b5b6b;
+  color: #5c5c7a;
   font-size: 0.82rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .auth-form input {
   width: 100%;
   box-sizing: border-box;
-  border: 1px solid #cdd6e1;
-  border-radius: 6px;
-  min-height: 42px;
-  padding: 9px 11px;
-  color: #1f2933;
-  background: #ffffff;
+  border: 1.5px solid #e8e4df;
+  border-radius: 10px;
+  min-height: 44px;
+  padding: 10px 14px;
+  color: #1a1a2e;
+  background: #faf9f7;
+  transition: border-color 0.15s;
+}
+
+.auth-form input:focus {
+  outline: none;
+  border-color: #e85d04;
+  box-shadow: 0 0 0 3px rgba(232, 93, 4, 0.08);
 }
 
 .muted {
-  color: #66788a;
+  color: #7a7a8c;
 }
 
 .notice,
 .error,
 .state {
-  max-width: 1240px;
-  border-radius: 8px;
-  padding: 12px 14px;
-  margin: 0 auto 14px;
-  font-weight: 800;
+  max-width: 1280px;
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin: 0 auto 16px;
+  font-weight: 700;
 }
 
 .notice {
-  background: #e7f6ec;
-  color: #166534;
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
 }
 
 .error {
-  background: #fff0f0;
-  color: #b42318;
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
 }
 
 .state {
-  background: #eef5ff;
-  color: #1d4ed8;
+  background: #eff6ff;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
 }
 
 @media (max-width: 980px) {
   .app-shell {
-    padding: 18px;
+    padding: 0;
+  }
+
+  .app-header {
+    padding: 16px 18px;
+    border-radius: 0;
   }
 
   .auth-form {
@@ -192,10 +238,11 @@ button:disabled {
   }
 
   .auth-card {
-    padding: 22px 18px;
+    padding: 24px 18px;
+    margin: 32px auto;
   }
 
   h1 {
-    font-size: 2.2rem;
+    font-size: 1.8rem;
   }
 }

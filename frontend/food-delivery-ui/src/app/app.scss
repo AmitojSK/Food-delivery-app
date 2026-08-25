@@ -1,8 +1,8 @@
 .app-shell {
   min-height: 100vh;
-  padding: 28px;
-  background: #f6f7f9;
-  color: #1f2933;
+  padding: 0;
+  background: #faf9f7;
+  color: #1a1a2e;
 }
 
 .app-header,
@@ -18,23 +18,23 @@
 }
 
 .app-header {
-  margin: 0 auto 24px;
-  max-width: 1240px;
+  margin: 0 auto;
+  max-width: 1280px;
+  padding: 20px 32px;
+  background: #ffffff;
+  border-bottom: 1px solid #f0ece6;
+  border-radius: 0 0 16px 16px;
+  box-shadow: 0 2px 12px rgba(26, 26, 46, 0.04);
+  margin-bottom: 28px;
 }
 
 .eyebrow {
-  margin: 0 0 6px;
-  color: #0f766e;
-  font-size: 0.78rem;
+  margin: 0 0 4px;
+  color: #e85d04;
+  font-size: 0.72rem;
   font-weight: 800;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-}
-
-h1,
-h2,
-h3,
-p {
-  letter-spacing: 0;
 }
 
 h1,
@@ -44,16 +44,19 @@ h3 {
 }
 
 h1 {
-  font-size: 2.75rem;
-  line-height: 1.04;
+  font-size: 2.2rem;
+  line-height: 1.1;
+  font-weight: 900;
 }
 
 h2 {
-  font-size: 1.35rem;
+  font-size: 1.3rem;
+  font-weight: 700;
 }
 
 h3 {
   font-size: 1.05rem;
+  font-weight: 700;
 }
 
 p {
@@ -62,26 +65,43 @@ p {
 
 button {
   border: 0;
-  border-radius: 6px;
-  min-height: 42px;
-  padding: 0 16px;
-  background: #0f766e;
+  border-radius: 10px;
+  min-height: 44px;
+  padding: 0 20px;
+  background: linear-gradient(135deg, #e85d04 0%, #dc2f02 100%);
   color: #ffffff;
-  font-weight: 800;
+  font-weight: 700;
   cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+
+button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(232, 93, 4, 0.3);
 }
 
 button:disabled {
   cursor: not-allowed;
-  opacity: 0.65;
+  opacity: 0.55;
 }
 
 .secondary,
 .mode-switch button,
 .admin-nav button {
   background: #ffffff;
-  color: #253241;
-  border: 1px solid #d7dee8;
+  color: #3d3d5c;
+  border: 1.5px solid #e8e4df;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.secondary:hover,
+.mode-switch button:hover,
+.admin-nav button:hover {
+  background: #fef7f0;
+  border-color: #e85d04;
+  color: #e85d04;
+  transform: none;
+  box-shadow: none;
 }
 
 .mode-switch {
@@ -89,43 +109,45 @@ button:disabled {
   grid-template-columns: 1fr 1fr;
   gap: 6px;
   padding: 6px;
-  border-radius: 8px;
-  background: #e8eef4;
+  border-radius: 12px;
+  background: #f5f2ee;
 }
 
 .account-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
-  color: #4b5b6b;
+  gap: 12px;
+  color: #5c5c7a;
   font-size: 0.85rem;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .mode-switch button.active,
 .admin-nav button.active {
-  background: #15212e;
+  background: #1a1a2e;
   color: #ffffff;
-  border-color: #15212e;
+  border-color: #1a1a2e;
 }
 
 .consumer-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 360px;
-  gap: 22px;
-  max-width: 1240px;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: 24px;
+  max-width: 1280px;
   margin: 0 auto;
+  padding: 0 32px;
 }
 
 .auth-card {
-  width: min(100%, 560px);
+  width: min(100%, 520px);
   display: grid;
-  gap: 18px;
-  margin: 52px auto;
-  padding: 28px;
-  border: 1px solid #dfe5ec;
-  border-radius: 10px;
+  gap: 20px;
+  margin: 60px auto;
+  padding: 36px;
+  border: 1px solid #f0ece6;
+  border-radius: 16px;
   background: #ffffff;
+  box-shadow: 0 12px 40px rgba(26, 26, 46, 0.06);
 }
 
 .auth-tabs {
@@ -135,8 +157,8 @@ button:disabled {
 }
 
 .auth-tabs button.active {
-  background: #15212e;
-  border-color: #15212e;
+  background: #1a1a2e;
+  border-color: #1a1a2e;
   color: #ffffff;
 }
 
@@ -156,41 +178,50 @@ button:disabled {
 .panel,
 .admin-sidebar {
   background: #ffffff;
-  border: 1px solid #dfe5ec;
-  border-radius: 8px;
+  border: 1px solid #f0ece6;
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(26, 26, 46, 0.04);
 }
 
 .browse,
 .panel,
 .cart-panel,
 .admin-sidebar {
-  padding: 20px;
+  padding: 24px;
 }
 
 .restaurant-grid,
 .menu-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(240px, 1fr));
-  gap: 16px;
-  margin-top: 18px;
+  gap: 18px;
+  margin-top: 20px;
 }
 
 .restaurant-card,
 .menu-item {
   display: grid;
   gap: 14px;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 16px;
+  border: 1px solid #f0ece6;
+  border-radius: 14px;
+  padding: 18px;
   background: #ffffff;
+  box-shadow: 0 2px 8px rgba(26, 26, 46, 0.03);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.restaurant-card:hover,
+.menu-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(232, 93, 4, 0.08);
 }
 
 .restaurant-art {
-  height: 118px;
+  height: 128px;
   display: grid;
   place-items: center;
-  border-radius: 8px;
-  background: #12343b;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #1a1a2e 0%, #3d3d5c 100%);
   color: #f8fafc;
 }
 
@@ -200,14 +231,15 @@ button:disabled {
 }
 
 .muted {
-  color: #66788a;
+  color: #7a7a8c;
 }
 
 .category {
-  color: #ad5d14;
-  font-size: 0.78rem;
+  color: #e85d04;
+  font-size: 0.75rem;
   font-weight: 800;
   text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .price-row {
@@ -222,12 +254,12 @@ button:disabled {
   position: sticky;
   top: 18px;
   display: grid;
-  gap: 16px;
+  gap: 18px;
 }
 
 .cart-line {
-  border-bottom: 1px solid #edf1f5;
-  padding-bottom: 12px;
+  border-bottom: 1px solid #f0ece6;
+  padding-bottom: 14px;
 }
 
 .cart-line div:first-child {
@@ -236,28 +268,36 @@ button:disabled {
 }
 
 .cart-line span {
-  color: #66788a;
+  color: #7a7a8c;
 }
 
 .quantity {
   display: grid;
-  grid-template-columns: 30px 28px 30px;
+  grid-template-columns: 32px 30px 32px;
   align-items: center;
   text-align: center;
 }
 
 .quantity button,
 .line-item button {
-  min-height: 30px;
-  width: 30px;
+  min-height: 32px;
+  width: 32px;
   padding: 0;
-  background: #e8eef4;
-  color: #253241;
+  background: #f5f2ee;
+  color: #3d3d5c;
+  border-radius: 8px;
+}
+
+.quantity button:hover,
+.line-item button:hover {
+  background: #fef7f0;
+  color: #e85d04;
 }
 
 .cart-total {
-  border-top: 1px solid #dfe5ec;
-  padding-top: 14px;
+  border-top: 2px solid #f0ece6;
+  padding-top: 16px;
+  font-size: 1.05rem;
 }
 
 .checkout {
@@ -267,19 +307,21 @@ button:disabled {
 
 .confirmation {
   display: grid;
-  gap: 4px;
-  border-radius: 8px;
-  padding: 14px;
-  background: #e7f6ec;
-  color: #14532d;
+  gap: 6px;
+  border-radius: 12px;
+  padding: 16px;
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
 }
 
 .admin-layout {
   display: grid;
   grid-template-columns: 260px minmax(0, 1fr);
-  gap: 20px;
-  max-width: 1240px;
+  gap: 24px;
+  max-width: 1280px;
   margin: 0 auto;
+  padding: 0 32px;
 }
 
 .admin-sidebar {
@@ -302,7 +344,7 @@ button:disabled {
 }
 
 .panel {
-  margin-bottom: 18px;
+  margin-bottom: 20px;
 }
 
 .form-grid {
@@ -310,7 +352,7 @@ button:disabled {
   grid-template-columns: repeat(2, minmax(180px, 1fr));
   gap: 14px;
   align-items: end;
-  margin-bottom: 20px;
+  margin-bottom: 22px;
 }
 
 .form-grid.wide {
@@ -320,9 +362,9 @@ button:disabled {
 label {
   display: grid;
   gap: 6px;
-  color: #4b5b6b;
+  color: #5c5c7a;
   font-size: 0.82rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 input,
@@ -330,13 +372,22 @@ select,
 textarea {
   width: 100%;
   box-sizing: border-box;
-  border: 1px solid #cdd6e1;
-  border-radius: 6px;
-  min-height: 42px;
-  padding: 9px 11px;
-  color: #1f2933;
-  background: #ffffff;
+  border: 1.5px solid #e8e4df;
+  border-radius: 10px;
+  min-height: 44px;
+  padding: 10px 14px;
+  color: #1a1a2e;
+  background: #faf9f7;
   font: inherit;
+  transition: border-color 0.15s;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: #e85d04;
+  box-shadow: 0 0 0 3px rgba(232, 93, 4, 0.08);
 }
 
 textarea {
@@ -359,88 +410,99 @@ table {
 
 th,
 td {
-  padding: 13px 12px;
+  padding: 14px 14px;
   text-align: left;
-  border-bottom: 1px solid #e6ebf1;
+  border-bottom: 1px solid #f0ece6;
   vertical-align: middle;
 }
 
 th {
-  color: #586879;
-  font-size: 0.76rem;
+  color: #7a7a8c;
+  font-size: 0.74rem;
+  font-weight: 700;
   text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .badge {
   display: inline-flex;
   border-radius: 999px;
-  padding: 4px 9px;
-  background: #e6f4f1;
-  color: #0f766e;
-  font-size: 0.76rem;
-  font-weight: 800;
+  padding: 5px 11px;
+  background: #fef7f0;
+  color: #e85d04;
+  font-size: 0.75rem;
+  font-weight: 700;
 }
 
 .notice,
 .error,
 .state {
-  max-width: 1240px;
-  border-radius: 8px;
-  padding: 12px 14px;
-  margin: 0 auto 14px;
-  font-weight: 800;
+  max-width: 1280px;
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin: 0 auto 16px;
+  font-weight: 700;
 }
 
 .notice {
-  background: #e7f6ec;
-  color: #166534;
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
 }
 
 .error {
-  background: #fff0f0;
-  color: #b42318;
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
 }
 
 .state {
-  background: #eef5ff;
-  color: #1d4ed8;
+  background: #eff6ff;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
 }
 
 .empty {
   grid-column: 1 / -1;
-  border: 1px dashed #cdd6e1;
-  border-radius: 8px;
-  padding: 26px;
-  color: #66788a;
+  border: 2px dashed #e8e4df;
+  border-radius: 14px;
+  padding: 32px;
+  color: #7a7a8c;
+  text-align: center;
 }
 
 .order-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
-  gap: 18px;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 20px;
 }
 
 .summary {
-  border: 1px solid #dfe5ec;
-  border-radius: 8px;
-  padding: 16px;
+  border: 1px solid #f0ece6;
+  border-radius: 14px;
+  padding: 20px;
   align-self: start;
+  background: #ffffff;
+  box-shadow: 0 4px 16px rgba(26, 26, 46, 0.04);
 }
 
 .line-item {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
-  padding: 10px 0;
-  border-bottom: 1px solid #edf1f5;
+  padding: 12px 0;
+  border-bottom: 1px solid #f0ece6;
 }
 
 .total {
-  margin: 16px 0 0;
+  margin: 18px 0 0;
+  font-weight: 700;
 }
 
 @media (max-width: 980px) {
-  .app-shell {
-    padding: 18px;
+  .app-header {
+    padding: 16px 18px;
+    border-radius: 0;
+    margin-bottom: 18px;
   }
 
   .app-header,
@@ -458,6 +520,7 @@ th {
   .admin-layout,
   .order-layout {
     grid-template-columns: 1fr;
+    padding: 0 16px;
   }
 
   .cart-panel {
@@ -480,6 +543,6 @@ th {
   }
 
   h1 {
-    font-size: 2.15rem;
+    font-size: 1.8rem;
   }
 }
