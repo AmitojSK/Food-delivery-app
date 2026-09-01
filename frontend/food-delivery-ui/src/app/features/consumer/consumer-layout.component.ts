@@ -14,10 +14,17 @@ import { CreateOrderRequest, Order } from '../../core/models';
   imports: [CommonModule, RouterOutlet],
   template: `
     <section class="consumer-grid">
-      <router-outlet />
+      <div class="consumer-main">
+        <router-outlet />
+      </div>
 
       <aside class="cart-panel">
-        <h2>Your cart</h2>
+        <div class="cart-header">
+          <h2>🛒 Your cart</h2>
+          @if (cart.items().length > 0) {
+            <span class="cart-count">{{ cart.items().length }}</span>
+          }
+        </div>
 
         @for (item of cart.items(); track item.foodItemId) {
           <div class="cart-line">
@@ -26,13 +33,16 @@ import { CreateOrderRequest, Order } from '../../core/models';
               <span>{{ item.unitPrice | currency: 'INR' }}</span>
             </div>
             <div class="quantity">
-              <button type="button" (click)="cart.updateQuantity(item.foodItemId, -1)">-</button>
+              <button type="button" (click)="cart.updateQuantity(item.foodItemId, -1)">−</button>
               <span>{{ item.quantity }}</span>
               <button type="button" (click)="cart.updateQuantity(item.foodItemId, 1)">+</button>
             </div>
           </div>
         } @empty {
-          <p class="muted">Select a restaurant and add menu items.</p>
+          <div class="cart-empty">
+            <p>Your cart is empty</p>
+            <p class="muted">Browse restaurants and add items to get started.</p>
+          </div>
         }
 
         <div class="cart-total">

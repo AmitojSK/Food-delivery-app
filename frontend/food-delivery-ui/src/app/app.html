@@ -18,17 +18,19 @@
     }
   </header>
 
-  @if (notifications.loading()) {
-    <p class="state">Loading service data...</p>
-  }
+  <div class="app-content">
+    @if (notifications.loading()) {
+      <p class="state">Loading service data...</p>
+    }
 
-  @if (notifications.notice()) {
-    <p class="notice">{{ notifications.notice() }}</p>
-  }
+    @if (notifications.notice()) {
+      <p class="notice">{{ notifications.notice() }}</p>
+    }
 
-  @if (notifications.error()) {
-    <p class="error">{{ notifications.error() }}</p>
-  }
+    @if (notifications.error()) {
+      <p class="error">{{ notifications.error() }}</p>
+    }
 
-  <router-outlet />
+    <router-outlet />
+  </div>
 </main>
