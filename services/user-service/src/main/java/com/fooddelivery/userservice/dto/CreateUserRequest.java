@@ -25,6 +25,9 @@ public record CreateUserRequest(
 
         @NotBlank(message = "Password is required")
         @Size(min = 8, max = 72, message = "Password must be between 8 and 72 characters")
-        String password
+        String password,
+
+        @Pattern(regexp = "^(CUSTOMER|RESTAURANT_OWNER)$", message = "Role must be CUSTOMER or RESTAURANT_OWNER")
+        String role
 ) {
 }

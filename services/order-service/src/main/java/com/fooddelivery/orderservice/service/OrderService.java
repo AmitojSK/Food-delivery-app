@@ -70,6 +70,25 @@ public class OrderService {
         return orderMapper.toResponse(orderRepository.save(order));
     }
 
+    public List<OrderResponse> listOrdersByRestaurant(Long restaurantId, OrderStatus status) {
+        List<Order> orders;
+        if (status != null) {
+            orders = orderRepository.findByRestaurantIdAndStatus(restaurantId, status);
+        } else {
+            orders = orderRepository.findByRestaurantId(restaurantId);
+        }
+        return orders.stream().map(orderMapper::toResponse).toList();
+    }
+
+    public OrderResponse updateOrderStatusForRestaurant(String id, Long restaurantId, UpdateOrderStatusRequest request) {
+        Order order = findOrder(id);
+        if (!order.getRestaurantId().equals(restaurantId)) {
+            throw new ResourceNotFoundException("Order with id " + id + " was not found");
+        }
+        order.setStatus(request.status());
+        return orderMapper.toResponse(orderRepository.save(order));
+    }
+
     private Order findOrder(String id) {
         return orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order with id " + id + " was not found"));

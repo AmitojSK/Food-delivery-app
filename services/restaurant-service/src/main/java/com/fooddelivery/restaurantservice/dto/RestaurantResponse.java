@@ -13,6 +13,7 @@ public record RestaurantResponse(
         String contactEmail,
         String contactPhone,
         boolean active,
+        Long ownerId,
         Instant createdAt,
         Instant updatedAt
 ) {

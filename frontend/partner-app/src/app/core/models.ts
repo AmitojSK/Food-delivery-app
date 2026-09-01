@@ -16,6 +16,7 @@ export interface CreateUserRequest {
   email: string;
   phoneNumber: string;
   password: string;
+  role: string;
 }
 
 export interface LoginRequest {
@@ -41,6 +42,7 @@ export interface Restaurant {
   contactEmail: string;
   contactPhone: string;
   active: boolean;
+  ownerId: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -54,6 +56,18 @@ export interface CreateRestaurantRequest {
   postalCode: string;
   contactEmail: string;
   contactPhone: string;
+}
+
+export interface UpdateRestaurantRequest {
+  name?: string;
+  cuisineType?: string;
+  streetAddress?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  active?: boolean;
 }
 
 export interface FoodItem {
@@ -76,6 +90,14 @@ export interface CreateFoodItemRequest {
   price: number;
 }
 
+export interface UpdateFoodItemRequest {
+  name?: string;
+  description?: string;
+  category?: string;
+  price?: number;
+  available?: boolean;
+}
+
 export type OrderStatus = 'CREATED' | 'CONFIRMED' | 'PREPARING' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'CANCELLED';
 
 export interface OrderItem {
@@ -84,13 +106,6 @@ export interface OrderItem {
   quantity: number;
   unitPrice: number;
   lineTotal: number;
-}
-
-export interface CreateOrderItemRequest {
-  foodItemId: number;
-  foodItemName: string;
-  quantity: number;
-  unitPrice: number;
 }
 
 export interface Order {
@@ -106,10 +121,8 @@ export interface Order {
   updatedAt: string;
 }
 
-export interface CreateOrderRequest {
-  userId: number;
-  restaurantId: number;
-  items: CreateOrderItemRequest[];
+export interface UpdateOrderStatusRequest {
+  status: OrderStatus;
 }
 
 export interface ApiErrorResponse {

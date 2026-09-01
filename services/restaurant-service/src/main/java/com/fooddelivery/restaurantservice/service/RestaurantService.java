@@ -25,11 +25,17 @@ public class RestaurantService {
 
     @Transactional
     public RestaurantResponse createRestaurant(CreateRestaurantRequest request) {
+        return createRestaurant(request, null);
+    }
+
+    @Transactional
+    public RestaurantResponse createRestaurant(CreateRestaurantRequest request, Long ownerId) {
         ensureNameAvailable(request.name().trim(), null);
         ensureContactEmailAvailable(request.contactEmail().trim().toLowerCase(), null);
         ensureContactPhoneAvailable(request.contactPhone().trim(), null);
 
         Restaurant restaurant = restaurantMapper.toEntity(request);
+        restaurant.setOwnerId(ownerId);
         return restaurantMapper.toResponse(restaurantRepository.save(restaurant));
     }
 
@@ -58,7 +64,11 @@ public class RestaurantService {
 
     @Transactional
     public RestaurantResponse updateRestaurant(Long id, UpdateRestaurantRequest request) {
-        Restaurant restaurant = findRestaurant(id);
+        return applyUpdate(findRestaurant(id), request);
+    }
+
+    private RestaurantResponse applyUpdate(Restaurant restaurant, UpdateRestaurantRequest request) {
+        Long id = restaurant.getId();
 
         if (request.name() != null) {
             String name = request.name().trim();
@@ -95,6 +105,22 @@ public class RestaurantService {
         }
 
         return restaurantMapper.toResponse(restaurant);
+    }
+
+    @Transactional(readOnly = true)
+    public List<RestaurantResponse> listByOwner(Long ownerId) {
+        return restaurantRepository.findByOwnerId(ownerId).stream()
+                .map(restaurantMapper::toResponse)
+                .toList();
+    }
+
+    @Transactional
+    public RestaurantResponse updateOwnedRestaurant(Long id, Long ownerId, UpdateRestaurantRequest request) {
+        Restaurant restaurant = findRestaurant(id);
+        if (!ownerId.equals(restaurant.getOwnerId())) {
+            throw new ResourceNotFoundException("Restaurant with id " + id + " was not found");
+        }
+        return applyUpdate(restaurant, request);
     }
 
     private Restaurant findRestaurant(Long id) {

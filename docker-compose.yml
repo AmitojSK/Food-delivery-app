@@ -202,6 +202,14 @@ services:
     ports:
       - "4200:80"
 
+  partner-app:
+    build: frontend/partner-app
+    container_name: partner-app
+    depends_on:
+      - api-gateway
+    ports:
+      - "4300:80"
+
 volumes:
   user_service_mysql_data:
   restaurant_service_mysql_data:

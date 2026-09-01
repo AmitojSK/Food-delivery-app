@@ -18,4 +18,6 @@ public interface RestaurantRepository extends JpaRepository<Restaurant, Long> {
     List<Restaurant> findByActive(boolean active);
 
     List<Restaurant> findByCityIgnoreCaseAndActive(String city, boolean active);
+
+    List<Restaurant> findByOwnerId(Long ownerId);
 }

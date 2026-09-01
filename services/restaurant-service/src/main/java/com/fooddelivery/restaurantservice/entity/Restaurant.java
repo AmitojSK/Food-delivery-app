@@ -45,6 +45,9 @@ public class Restaurant {
     @Column(nullable = false)
     private boolean active = true;
 
+    @Column(name = "owner_id")
+    private Long ownerId;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -145,5 +148,13 @@ public class Restaurant {
 
     public Instant getUpdatedAt() {
         return updatedAt;
+    }
+
+    public Long getOwnerId() {
+        return ownerId;
+    }
+
+    public void setOwnerId(Long ownerId) {
+        this.ownerId = ownerId;
     }
 }

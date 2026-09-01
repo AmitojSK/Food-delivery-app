@@ -3,6 +3,7 @@ package com.fooddelivery.userservice.mapper;
 import com.fooddelivery.userservice.dto.CreateUserRequest;
 import com.fooddelivery.userservice.dto.UserResponse;
 import com.fooddelivery.userservice.entity.User;
+import com.fooddelivery.userservice.entity.UserRole;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -14,6 +15,9 @@ public class UserMapper {
         user.setLastName(request.lastName().trim());
         user.setEmail(request.email().trim().toLowerCase());
         user.setPhoneNumber(request.phoneNumber().trim());
+        if (request.role() != null) {
+            user.setRole(UserRole.valueOf(request.role()));
+        }
         return user;
     }
 
