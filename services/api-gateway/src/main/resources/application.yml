@@ -31,6 +31,12 @@ spring:
             - Path=/order-api/**
           filters:
             - StripPrefix=1
+        - id: delivery-service
+          uri: lb://DELIVERY-SERVICE
+          predicates:
+            - Path=/delivery-api/**
+          filters:
+            - StripPrefix=1
 
 management:
   endpoints:

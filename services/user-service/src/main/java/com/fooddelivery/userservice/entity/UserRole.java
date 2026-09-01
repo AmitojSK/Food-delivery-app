@@ -3,5 +3,6 @@ package com.fooddelivery.userservice.entity;
 public enum UserRole {
     CUSTOMER,
     ADMIN,
-    RESTAURANT_OWNER
+    RESTAURANT_OWNER,
+    DELIVERY_PARTNER
 }

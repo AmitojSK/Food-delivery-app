@@ -1,0 +1,5 @@
+{
+  "/user-api": { "target": "http://localhost:8080", "secure": false, "changeOrigin": true },
+  "/delivery-api": { "target": "http://localhost:8080", "secure": false, "changeOrigin": true },
+  "/order-api": { "target": "http://localhost:8080", "secure": false, "changeOrigin": true }
+}
