@@ -9,6 +9,11 @@ spring:
     consumer:
       group-id: delivery-service-v1
       auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.value.default.type: java.util.LinkedHashMap
+        spring.json.trusted.packages: java.util
   datasource:
     url: ${DELIVERY_SERVICE_DB_URL:jdbc:mysql://localhost:3310/delivery_service_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
     username: ${DELIVERY_SERVICE_DB_USERNAME:delivery_service}
@@ -39,3 +44,8 @@ eureka:
 security:
   jwt:
     secret: ${JWT_SECRET:c3ByaW5nLWJvb3QtdXNlci1zZXJ2aWNlLWxvY2FsLWRldmVsb3BtZW50LXNlY3JldC0yMDI2}
+
+app:
+  kafka:
+    topics:
+      order-events: order.events.v1

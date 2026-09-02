@@ -187,7 +187,11 @@ public class OrderService {
         event.setCorrelationId(order.getId());
         event.setCausationId(eventId);
         event.setOccurredAt(Instant.now());
+        RestaurantResponse restaurant = serviceClient.getRestaurant(order.getRestaurantId());
+        String pickupAddress = restaurant.streetAddress() + ", " + restaurant.city() + ", " + restaurant.state()
+                + " " + restaurant.postalCode();
         event.setData(Map.of("orderId", order.getId(), "restaurantId", order.getRestaurantId(),
+                "pickupAddress", pickupAddress,
                 "deliveryAddress", order.getDeliveryAddress(), "contactName", order.getContactName(),
                 "contactPhone", order.getContactPhone()));
         outboxRepository.save(event);
