@@ -1,4 +1,5 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
+import { SlicePipe } from '@angular/common';
 import { DeliveryApi } from '../../core/delivery-api';
 import { NotificationService } from '../../core/notification.service';
 import { Delivery, DeliveryStatus } from '../../core/models';
@@ -6,6 +7,7 @@ import { Delivery, DeliveryStatus } from '../../core/models';
 @Component({
   selector: 'app-active-delivery',
   standalone: true,
+  imports: [SlicePipe],
   template: `
     <h2>Active Deliveries</h2>
 

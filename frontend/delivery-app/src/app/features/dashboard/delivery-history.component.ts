@@ -1,10 +1,12 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
+import { SlicePipe } from '@angular/common';
 import { DeliveryApi } from '../../core/delivery-api';
 import { Delivery } from '../../core/models';
 
 @Component({
   selector: 'app-delivery-history',
   standalone: true,
+  imports: [SlicePipe],
   template: `
     <h2>Delivery History</h2>
 

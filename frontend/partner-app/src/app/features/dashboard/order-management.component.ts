@@ -1,5 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { SlicePipe } from '@angular/common';
 import { PartnerApi } from '../../core/partner-api';
 import { NotificationService } from '../../core/notification.service';
 import { Order, OrderStatus } from '../../core/models';
@@ -7,7 +8,7 @@ import { Order, OrderStatus } from '../../core/models';
 @Component({
   selector: 'app-order-management',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, SlicePipe],
   template: `
     <div class="page-header">
       <div>

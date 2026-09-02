@@ -1,5 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { Router } from '@angular/router';
+import { SlicePipe } from '@angular/common';
 import { DeliveryApi } from '../../core/delivery-api';
 import { NotificationService } from '../../core/notification.service';
 import { Delivery } from '../../core/models';
@@ -7,6 +8,7 @@ import { Delivery } from '../../core/models';
 @Component({
   selector: 'app-available-deliveries',
   standalone: true,
+  imports: [SlicePipe],
   template: `
     <div class="page-header">
       <h2>Available Deliveries</h2>
