@@ -5,7 +5,7 @@ RUN mvn dependency:go-offline -q
 COPY src src
 RUN mvn package -DskipTests -q
 
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:25-jre
 WORKDIR /app
 COPY --from=build /build/target/*.jar app.jar
 EXPOSE 8082
