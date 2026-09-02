@@ -106,6 +106,19 @@ public class OrderService {
         return orderMapper.toResponse(saved);
     }
 
+    public void applyDeliveryEvent(String orderId, String eventType) {
+        Order order = findOrder(orderId);
+        OrderStatus target = switch (eventType) {
+            case "DeliveryPickedUp" -> OrderStatus.OUT_FOR_DELIVERY;
+            case "DeliveryCompleted" -> OrderStatus.DELIVERED;
+            default -> throw new IllegalArgumentException("Unsupported delivery event: " + eventType);
+        };
+        if (order.getStatus() == target) return;
+        validateStatusTransition(order.getStatus(), target);
+        order.setStatus(target);
+        orderRepository.save(order);
+    }
+
     private Order findOrder(String id) {
         return orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order with id " + id + " was not found"));
