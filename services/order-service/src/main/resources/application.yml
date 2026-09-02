@@ -10,6 +10,8 @@ spring:
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       properties:
         enable.idempotence: true
 
@@ -29,3 +31,8 @@ eureka:
 security:
   jwt:
     secret: ${JWT_SECRET:c3ByaW5nLWJvb3QtdXNlci1zZXJ2aWNlLWxvY2FsLWRldmVsb3BtZW50LXNlY3JldC0yMDI2}
+
+app:
+  kafka:
+    topics:
+      order-events: order.events.v1
