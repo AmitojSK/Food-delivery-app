@@ -36,6 +36,20 @@ services:
     ports:
       - "8090:8080"
 
+  redis:
+    image: redis:7.4-alpine
+    container_name: redis
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:-redis_local_password}"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli --no-auth-warning -a $${REDIS_PASSWORD:-redis_local_password} ping | grep PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   # ---------- databases ----------
 
   user-service-mysql:
@@ -309,3 +323,4 @@ volumes:
   order_service_mongodb_data:
   delivery_service_mysql_data:
   kafka_data:
+  redis_data:
