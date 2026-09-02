@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fooddelivery.example/contracts/events/v1/order-ready-for-pickup.schema.json",
+  "title": "OrderReadyForPickup v1 payload",
+  "type": "object",
+  "required": ["orderId", "restaurantId", "deliveryAddress", "contactName", "contactPhone"],
+  "properties": {
+    "orderId": { "type": "string" },
+    "restaurantId": { "type": "integer", "minimum": 1 },
+    "deliveryAddress": { "type": "string", "maxLength": 300 },
+    "contactName": { "type": "string", "maxLength": 160 },
+    "contactPhone": { "type": "string", "maxLength": 20 }
+  },
+  "additionalProperties": false
+}

@@ -76,7 +76,7 @@ export interface CreateFoodItemRequest {
   price: number;
 }
 
-export type OrderStatus = 'CREATED' | 'CONFIRMED' | 'PREPARING' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'CANCELLED';
+export type OrderStatus = 'CREATED' | 'CONFIRMED' | 'PREPARING' | 'READY_FOR_PICKUP' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'CANCELLED';
 
 export interface OrderItem {
   foodItemId: number;

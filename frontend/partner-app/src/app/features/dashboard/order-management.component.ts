@@ -55,7 +55,7 @@ import { Order, OrderStatus } from '../../core/models';
                     <button class="btn-action" (click)="updateStatus(order, 'PREPARING')">Start Preparing</button>
                   }
                   @case ('PREPARING') {
-                    <button class="btn-action" (click)="updateStatus(order, 'OUT_FOR_DELIVERY')">Ready for Pickup</button>
+                    <button class="btn-action" (click)="updateStatus(order, 'READY_FOR_PICKUP')">Ready for Pickup</button>
                   }
                 }
               </div>
@@ -99,6 +99,7 @@ import { Order, OrderStatus } from '../../core/models';
     [data-status="CREATED"] { background: #fff3cd; color: #856404; }
     [data-status="CONFIRMED"] { background: #cce5ff; color: #004085; }
     [data-status="PREPARING"] { background: #e2d5f1; color: #5a2d82; }
+    [data-status="READY_FOR_PICKUP"] { background: #d4edda; color: #155724; }
     [data-status="OUT_FOR_DELIVERY"] { background: #d4edda; color: #155724; }
     [data-status="DELIVERED"] { background: #d1ecf1; color: #0c5460; }
     [data-status="CANCELLED"] { background: #f8d7da; color: #721c24; }
@@ -139,6 +140,7 @@ export class OrderManagementComponent implements OnInit {
     { label: 'New', value: 'CREATED' },
     { label: 'Confirmed', value: 'CONFIRMED' },
     { label: 'Preparing', value: 'PREPARING' },
+    { label: 'Ready for Pickup', value: 'READY_FOR_PICKUP' },
     { label: 'Out for Delivery', value: 'OUT_FOR_DELIVERY' },
     { label: 'Delivered', value: 'DELIVERED' },
     { label: 'Cancelled', value: 'CANCELLED' }

@@ -154,7 +154,8 @@ public class OrderService {
         boolean allowed = switch (from) {
             case CREATED -> to == OrderStatus.CONFIRMED || to == OrderStatus.CANCELLED;
             case CONFIRMED -> to == OrderStatus.PREPARING || to == OrderStatus.CANCELLED;
-            case PREPARING -> to == OrderStatus.OUT_FOR_DELIVERY || to == OrderStatus.CANCELLED;
+            case PREPARING -> to == OrderStatus.READY_FOR_PICKUP || to == OrderStatus.CANCELLED;
+            case READY_FOR_PICKUP -> to == OrderStatus.OUT_FOR_DELIVERY || to == OrderStatus.CANCELLED;
             case OUT_FOR_DELIVERY -> to == OrderStatus.DELIVERED || to == OrderStatus.CANCELLED;
             default -> false;
         };
