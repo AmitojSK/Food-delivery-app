@@ -58,10 +58,43 @@ jobs:
       - run: npx ng test --watch=false
       - run: npx ng build --configuration production
 
+  dependency-scan:
+    name: dependency-scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Trivy filesystem scan (Maven + npm manifests)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: sarif
+          output: trivy-fs-results.sarif
+          severity: HIGH,CRITICAL
+          exit-code: '0'
+      - name: Upload results to the Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-fs-results.sarif
+
   docker:
     name: docker-build
     runs-on: ubuntu-latest
     needs: [backend, frontend]
+    env:
+      COMPOSE_PROJECT_NAME: fooddelivery
     steps:
       - uses: actions/checkout@v4
       - run: docker compose build
+      - name: Scan built images for HIGH/CRITICAL vulnerabilities
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+          images="fooddelivery-discovery-server fooddelivery-api-gateway fooddelivery-user-service fooddelivery-restaurant-service fooddelivery-food-catalogue-service fooddelivery-order-service fooddelivery-delivery-service fooddelivery-frontend fooddelivery-partner-app fooddelivery-delivery-app"
+          for image in $images; do
+            echo "::group::Trivy scan: $image"
+            trivy image --severity HIGH,CRITICAL --exit-code 0 "$image"
+            echo "::endgroup::"
+          done
