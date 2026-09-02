@@ -135,11 +135,27 @@ jobs:
           owner=$(printf '%s' "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           branch=$(printf '%s' "${{ github.ref_name }}" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9._-' '-')
           images="fooddelivery-discovery-server fooddelivery-api-gateway fooddelivery-user-service fooddelivery-restaurant-service fooddelivery-food-catalogue-service fooddelivery-order-service fooddelivery-delivery-service fooddelivery-frontend fooddelivery-partner-app fooddelivery-delivery-app"
+
+          # GHCR occasionally returns a transient "unknown blob" error mid-upload
+          # (seen pushing food-delivery-app-frontend); retry a few times before
+          # failing the job outright.
+          push_with_retry() {
+            for attempt in 1 2 3; do
+              if docker push "$1"; then
+                return 0
+              fi
+              echo "Push of $1 failed (attempt $attempt/3); retrying in 10s..."
+              sleep 10
+            done
+            echo "Push of $1 failed after 3 attempts."
+            return 1
+          }
+
           for image in $images; do
             name=${image#fooddelivery-}
             target="ghcr.io/$owner/food-delivery-app-$name"
             docker tag "$image" "$target:${{ github.sha }}"
             docker tag "$image" "$target:$branch"
-            docker push "$target:${{ github.sha }}"
-            docker push "$target:$branch"
+            push_with_retry "$target:${{ github.sha }}"
+            push_with_retry "$target:$branch"
           done
