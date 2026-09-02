@@ -40,6 +40,13 @@ jobs:
           distribution: temurin
           cache: maven
       - run: mvn verify -q
+      - name: Generate SBOM (CycloneDX)
+        run: mvn -q org.cyclonedx:cyclonedx-maven-plugin:2.9.1:makeAggregateBom
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ matrix.service }}
+          path: services/${{ matrix.service }}/target/bom.json
+          retention-days: 30
 
   frontend:
     name: ${{ matrix.app }}
@@ -64,6 +71,13 @@ jobs:
       - run: npm ci
       - run: npx ng test --watch=false
       - run: npx ng build --configuration production
+      - name: Generate SBOM (CycloneDX)
+        run: npx --yes @cyclonedx/cyclonedx-npm --output-file bom.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ matrix.app }}
+          path: frontend/${{ matrix.app }}/bom.json
+          retention-days: 30
 
   dependency-scan:
     name: dependency-scan
