@@ -5,6 +5,7 @@ import java.util.Map;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 public class DeliveryEventConsumer {
@@ -17,6 +18,7 @@ public class DeliveryEventConsumer {
     }
 
     @KafkaListener(topics = "${app.kafka.topics.delivery-events}")
+    @Transactional
     @SuppressWarnings("unchecked")
     public void consume(ConsumerRecord<String, Map<String, Object>> record) {
         Map<String, Object> envelope = record.value();

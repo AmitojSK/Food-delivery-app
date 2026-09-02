@@ -23,6 +23,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class OrderService {
@@ -43,6 +44,7 @@ public class OrderService {
         this.outboxRepository = outboxRepository;
     }
 
+    @Transactional
     public OrderResponse createOrder(CreateOrderRequest request) {
         validateRestaurant(request.restaurantId());
         validateFoodItems(request.restaurantId(), request.items());
@@ -72,6 +74,7 @@ public class OrderService {
                 .toList();
     }
 
+    @Transactional
     public OrderResponse updateOrderStatus(String id, UpdateOrderStatusRequest request) {
         Order order = findOrder(id);
         validateStatusTransition(order.getStatus(), request.status());
@@ -92,6 +95,7 @@ public class OrderService {
         return orders.stream().map(orderMapper::toResponse).toList();
     }
 
+    @Transactional
     public OrderResponse updateOrderStatusForRestaurant(
             String id, Long restaurantId, Long ownerId, UpdateOrderStatusRequest request) {
         validateRestaurantOwnership(restaurantId, ownerId);
@@ -106,6 +110,7 @@ public class OrderService {
         return orderMapper.toResponse(saved);
     }
 
+    @Transactional
     public void applyDeliveryEvent(String orderId, String eventType) {
         Order order = findOrder(orderId);
         OrderStatus target = switch (eventType) {
