@@ -6,6 +6,13 @@ on:
   push:
     branches: [develop, main]
 
+# A new push/PR update cancels this workflow's still-running run for the same
+# ref instead of queuing alongside it — cuts job-slot usage when a branch gets
+# pushed to repeatedly (exactly the scenario that saturated the queue here).
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
 
   backend:
