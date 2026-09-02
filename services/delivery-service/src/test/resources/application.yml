@@ -1,0 +1,30 @@
+spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration
+      - org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration
+  kafka:
+    listener:
+      auto-startup: false
+    consumer:
+      group-id: delivery-service-test
+  cloud:
+    discovery:
+      enabled: false
+
+eureka:
+  client:
+    enabled: false
+
+security:
+  jwt:
+    secret: c3ByaW5nLWJvb3QtdXNlci1zZXJ2aWNlLXRlc3Qtc2VjcmV0LTIwMjY=
+
+app:
+  kafka:
+    provision-topics: false
+    topics:
+      order-events: order.events.v1
+      delivery-events: delivery.events.v1

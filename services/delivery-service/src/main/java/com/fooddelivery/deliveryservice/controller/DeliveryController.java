@@ -2,6 +2,7 @@ package com.fooddelivery.deliveryservice.controller;
 
 import com.fooddelivery.deliveryservice.dto.CreateDeliveryRequest;
 import com.fooddelivery.deliveryservice.dto.DeliveryResponse;
+import com.fooddelivery.deliveryservice.dto.DriverLocationResponse;
 import com.fooddelivery.deliveryservice.dto.UpdateDeliveryStatusRequest;
 import com.fooddelivery.deliveryservice.dto.UpdateLocationRequest;
 import com.fooddelivery.deliveryservice.entity.DeliveryStatus;
@@ -48,6 +49,12 @@ public class DeliveryController {
     @PreAuthorize("@deliverySecurity.canReadOrderDelivery(#orderId, authentication)")
     public ResponseEntity<DeliveryResponse> getDeliveryByOrderId(@PathVariable String orderId) {
         return ResponseEntity.ok(deliveryService.getDeliveryByOrderId(orderId));
+    }
+
+    @GetMapping("/{id}/driver-location")
+    @PreAuthorize("@deliverySecurity.canReadDelivery(#id, authentication)")
+    public ResponseEntity<DriverLocationResponse> getLiveDriverLocation(@PathVariable Long id) {
+        return ResponseEntity.ok(deliveryService.getLiveDriverLocation(id));
     }
 
     @GetMapping("/available")

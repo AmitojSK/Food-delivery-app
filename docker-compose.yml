@@ -235,10 +235,13 @@ services:
         condition: service_healthy
       discovery-server:
         condition: service_healthy
+      kafka:
+        condition: service_healthy
     environment:
       ORDER_SERVICE_MONGODB_URI: mongodb://order_service:order_service_password@order-service-mongodb:27017/order_service_db?authSource=admin&replicaSet=rs0
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-server:8761/eureka/
       JWT_SECRET: ${JWT_SECRET:-c3ByaW5nLWJvb3QtdXNlci1zZXJ2aWNlLWxvY2FsLWRldmVsb3BtZW50LXNlY3JldC0yMDI2}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     ports:
       - "8084:8084"
     healthcheck:
@@ -255,12 +258,20 @@ services:
         condition: service_healthy
       discovery-server:
         condition: service_healthy
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       DELIVERY_SERVICE_DB_URL: jdbc:mysql://delivery-service-mysql:3306/delivery_service_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       DELIVERY_SERVICE_DB_USERNAME: delivery_service
       DELIVERY_SERVICE_DB_PASSWORD: delivery_service_password
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-server:8761/eureka/
       JWT_SECRET: ${JWT_SECRET:-c3ByaW5nLWJvb3QtdXNlci1zZXJ2aWNlLWxvY2FsLWRldmVsb3BtZW50LXNlY3JldC0yMDI2}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_local_password}
     ports:
       - "8085:8085"
     healthcheck:
@@ -275,6 +286,8 @@ services:
     depends_on:
       discovery-server:
         condition: service_healthy
+      redis:
+        condition: service_healthy
       user-service:
         condition: service_healthy
       restaurant-service:
@@ -288,6 +301,9 @@ services:
     environment:
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-server:8761/eureka/
       JWT_SECRET: ${JWT_SECRET:-c3ByaW5nLWJvb3QtdXNlci1zZXJ2aWNlLWxvY2FsLWRldmVsb3BtZW50LXNlY3JldC0yMDI2}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_local_password}
     ports:
       - "8080:8080"
 

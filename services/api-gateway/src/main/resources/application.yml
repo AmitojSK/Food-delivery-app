@@ -4,9 +4,29 @@ server:
 spring:
   application:
     name: api-gateway
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: ${REDIS_TIMEOUT:500ms}
   cloud:
     gateway:
       routes:
+        # Rate-limited routes are matched before their general counterparts below,
+        # since Spring Cloud Gateway dispatches to the first predicate match.
+        - id: user-service-auth
+          uri: lb://USER-SERVICE
+          predicates:
+            - Path=/user-api/api/v1/auth/**
+          filters:
+            - StripPrefix=1
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 5
+                redis-rate-limiter.burstCapacity: 10
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@rateLimitKeyResolver}"
         - id: user-service
           uri: lb://USER-SERVICE
           predicates:
@@ -25,12 +45,38 @@ spring:
             - Path=/catalogue-api/**
           filters:
             - StripPrefix=1
+        - id: order-service-checkout
+          uri: lb://ORDER-SERVICE
+          predicates:
+            - Path=/order-api/api/v1/orders
+            - Method=POST
+          filters:
+            - StripPrefix=1
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 3
+                redis-rate-limiter.burstCapacity: 6
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@rateLimitKeyResolver}"
         - id: order-service
           uri: lb://ORDER-SERVICE
           predicates:
             - Path=/order-api/**
           filters:
             - StripPrefix=1
+        - id: delivery-service-accept
+          uri: lb://DELIVERY-SERVICE
+          predicates:
+            - Path=/delivery-api/api/v1/deliveries/*/accept
+            - Method=POST
+          filters:
+            - StripPrefix=1
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 3
+                redis-rate-limiter.burstCapacity: 6
+                redis-rate-limiter.requestedTokens: 1
+                key-resolver: "#{@rateLimitKeyResolver}"
         - id: delivery-service
           uri: lb://DELIVERY-SERVICE
           predicates:

@@ -1,7 +1,9 @@
 package com.fooddelivery.deliveryservice.service;
 
+import com.fooddelivery.deliveryservice.cache.DriverLocationCache;
 import com.fooddelivery.deliveryservice.dto.CreateDeliveryRequest;
 import com.fooddelivery.deliveryservice.dto.DeliveryResponse;
+import com.fooddelivery.deliveryservice.dto.DriverLocationResponse;
 import com.fooddelivery.deliveryservice.dto.UpdateDeliveryStatusRequest;
 import com.fooddelivery.deliveryservice.dto.UpdateLocationRequest;
 import com.fooddelivery.deliveryservice.entity.Delivery;
@@ -22,12 +24,14 @@ public class DeliveryService {
     private final DeliveryRepository deliveryRepository;
     private final DeliveryMapper deliveryMapper;
     private final DeliveryEventPublisher eventPublisher;
+    private final DriverLocationCache driverLocationCache;
 
     public DeliveryService(DeliveryRepository deliveryRepository, DeliveryMapper deliveryMapper,
-                           DeliveryEventPublisher eventPublisher) {
+                           DeliveryEventPublisher eventPublisher, DriverLocationCache driverLocationCache) {
         this.deliveryRepository = deliveryRepository;
         this.deliveryMapper = deliveryMapper;
         this.eventPublisher = eventPublisher;
+        this.driverLocationCache = driverLocationCache;
     }
 
     @Transactional
@@ -113,7 +117,23 @@ public class DeliveryService {
         }
         delivery.setDriverLatitude(request.latitude());
         delivery.setDriverLongitude(request.longitude());
-        return deliveryMapper.toResponse(deliveryRepository.save(delivery));
+        DeliveryResponse response = deliveryMapper.toResponse(deliveryRepository.save(delivery));
+        driverLocationCache.remember(driverId, request.latitude(), request.longitude());
+        return response;
+    }
+
+    @Transactional(readOnly = true)
+    public DriverLocationResponse getLiveDriverLocation(Long id) {
+        Delivery delivery = findDelivery(id);
+        if (delivery.getDriverId() == null) {
+            throw new ResourceNotFoundException("Delivery " + id + " has no assigned driver yet");
+        }
+        DriverLocationCache.DriverLocationView location = driverLocationCache.find(delivery.getDriverId());
+        if (location == null) {
+            throw new ResourceNotFoundException("No recent location reported for delivery " + id);
+        }
+        return new DriverLocationResponse(location.driverId(), location.latitude(), location.longitude(),
+                location.updatedAt());
     }
 
     private Delivery findDelivery(Long id) {
