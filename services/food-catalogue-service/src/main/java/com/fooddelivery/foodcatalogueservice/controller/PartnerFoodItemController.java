@@ -9,6 +9,7 @@ import java.net.URI;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,21 +31,21 @@ public class PartnerFoodItemController {
     }
 
     @PostMapping
-    public ResponseEntity<FoodItemResponse> createFoodItem(@Valid @RequestBody CreateFoodItemRequest request) {
-        FoodItemResponse foodItem = foodItemService.createFoodItem(request);
+    public ResponseEntity<FoodItemResponse> createFoodItem(@Valid @RequestBody CreateFoodItemRequest request, Authentication authentication) {
+        FoodItemResponse foodItem = foodItemService.createFoodItem(request, (Long) authentication.getPrincipal());
         return ResponseEntity.created(URI.create("/api/v1/partner/food-items/" + foodItem.id())).body(foodItem);
     }
 
     @GetMapping
-    public ResponseEntity<List<FoodItemResponse>> listFoodItems(@RequestParam Long restaurantId) {
-        return ResponseEntity.ok(foodItemService.listFoodItems(restaurantId, null, null));
+    public ResponseEntity<List<FoodItemResponse>> listFoodItems(@RequestParam Long restaurantId, Authentication authentication) {
+        return ResponseEntity.ok(foodItemService.listOwnedFoodItems(restaurantId, (Long) authentication.getPrincipal()));
     }
 
     @PatchMapping("/{id}")
     public ResponseEntity<FoodItemResponse> updateFoodItem(
             @PathVariable Long id,
-            @Valid @RequestBody UpdateFoodItemRequest request
+            @Valid @RequestBody UpdateFoodItemRequest request, Authentication authentication
     ) {
-        return ResponseEntity.ok(foodItemService.updateFoodItem(id, request));
+        return ResponseEntity.ok(foodItemService.updateFoodItem(id, request, (Long) authentication.getPrincipal()));
     }
 }
