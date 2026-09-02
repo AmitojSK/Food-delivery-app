@@ -13,6 +13,11 @@ import com.fooddelivery.orderservice.exception.OrderValidationException;
 import com.fooddelivery.orderservice.exception.ResourceNotFoundException;
 import com.fooddelivery.orderservice.mapper.OrderMapper;
 import com.fooddelivery.orderservice.repository.OrderRepository;
+import com.fooddelivery.orderservice.event.OrderOutboxEvent;
+import com.fooddelivery.orderservice.event.OrderOutboxRepository;
+import java.time.Instant;
+import java.util.Map;
+import java.util.UUID;
 import java.math.BigDecimal;
 import java.util.List;
 import org.slf4j.Logger;
@@ -28,11 +33,14 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final OrderMapper orderMapper;
     private final ServiceClient serviceClient;
+    private final OrderOutboxRepository outboxRepository;
 
-    public OrderService(OrderRepository orderRepository, OrderMapper orderMapper, ServiceClient serviceClient) {
+    public OrderService(OrderRepository orderRepository, OrderMapper orderMapper, ServiceClient serviceClient,
+                        OrderOutboxRepository outboxRepository) {
         this.orderRepository = orderRepository;
         this.orderMapper = orderMapper;
         this.serviceClient = serviceClient;
+        this.outboxRepository = outboxRepository;
     }
 
     public OrderResponse createOrder(CreateOrderRequest request) {
@@ -68,7 +76,9 @@ public class OrderService {
         Order order = findOrder(id);
         validateStatusTransition(order.getStatus(), request.status());
         order.setStatus(request.status());
-        return orderMapper.toResponse(orderRepository.save(order));
+        Order saved = orderRepository.save(order);
+        addReadyForPickupEvent(saved);
+        return orderMapper.toResponse(saved);
     }
 
     public List<OrderResponse> listOrdersByRestaurant(Long restaurantId, Long ownerId, OrderStatus status) {
@@ -91,7 +101,9 @@ public class OrderService {
         }
         validateStatusTransition(order.getStatus(), request.status());
         order.setStatus(request.status());
-        return orderMapper.toResponse(orderRepository.save(order));
+        Order saved = orderRepository.save(order);
+        addReadyForPickupEvent(saved);
+        return orderMapper.toResponse(saved);
     }
 
     private Order findOrder(String id) {
@@ -162,5 +174,22 @@ public class OrderService {
         if (!allowed) {
             throw new OrderValidationException("Cannot transition order from " + from + " to " + to);
         }
+    }
+
+    private void addReadyForPickupEvent(Order order) {
+        if (order.getStatus() != OrderStatus.READY_FOR_PICKUP) return;
+        String eventId = UUID.randomUUID().toString();
+        OrderOutboxEvent event = new OrderOutboxEvent();
+        event.setId(eventId);
+        event.setEventType("OrderReadyForPickup");
+        event.setEventVersion(1);
+        event.setAggregateId(order.getId());
+        event.setCorrelationId(order.getId());
+        event.setCausationId(eventId);
+        event.setOccurredAt(Instant.now());
+        event.setData(Map.of("orderId", order.getId(), "restaurantId", order.getRestaurantId(),
+                "deliveryAddress", order.getDeliveryAddress(), "contactName", order.getContactName(),
+                "contactPhone", order.getContactPhone()));
+        outboxRepository.save(event);
     }
 }
