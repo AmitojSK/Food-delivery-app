@@ -11,15 +11,19 @@ import org.springframework.stereotype.Component;
 @Component
 public class OrderReadyForPickupConsumer {
     private final DeliveryService deliveryService;
+    private final ProcessedEventRepository processedEventRepository;
 
-    public OrderReadyForPickupConsumer(DeliveryService deliveryService) {
+    public OrderReadyForPickupConsumer(DeliveryService deliveryService, ProcessedEventRepository processedEventRepository) {
         this.deliveryService = deliveryService;
+        this.processedEventRepository = processedEventRepository;
     }
 
     @KafkaListener(topics = "${app.kafka.topics.order-events}")
     @SuppressWarnings("unchecked")
     public void consume(ConsumerRecord<String, Map<String, Object>> record) {
         Map<String, Object> envelope = record.value();
+        String eventId = (String) envelope.get("eventId");
+        if (eventId == null || processedEventRepository.existsById(eventId)) return;
         if (!"OrderReadyForPickup".equals(envelope.get("eventType"))) return;
         Map<String, Object> data = (Map<String, Object>) envelope.get("data");
         try {
@@ -31,5 +35,6 @@ public class OrderReadyForPickupConsumer {
         } catch (DeliveryValidationException duplicate) {
             // Re-delivery of an already-processed order event is safe and expected.
         }
+        processedEventRepository.save(new ProcessedEvent(eventId));
     }
 }
