@@ -97,6 +97,9 @@ export interface Order {
   id: string;
   userId: number;
   restaurantId: number;
+  deliveryAddress: string;
+  contactName: string;
+  contactPhone: string;
   status: OrderStatus;
   items: OrderItem[];
   subtotal: number;
@@ -109,6 +112,9 @@ export interface Order {
 export interface CreateOrderRequest {
   userId: number;
   restaurantId: number;
+  deliveryAddress: string;
+  contactName: string;
+  contactPhone: string;
   items: CreateOrderItemRequest[];
 }
 

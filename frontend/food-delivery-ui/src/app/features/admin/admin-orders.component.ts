@@ -143,7 +143,14 @@ export class AdminOrdersComponent implements OnInit {
 
     this.notifications.saving.set(true);
     this.notifications.clearMessages();
-    this.api.createOrder({ userId, restaurantId, items: this.draftItems() })
+    this.api.createOrder({
+      userId,
+      restaurantId,
+      deliveryAddress: 'Administrative order - address pending confirmation',
+      contactName: 'Administrative order',
+      contactPhone: '+0000000000',
+      items: this.draftItems()
+    })
       .pipe(finalize(() => this.notifications.saving.set(false)))
       .subscribe({
         next: order => {

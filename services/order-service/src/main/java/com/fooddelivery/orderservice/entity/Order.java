@@ -19,6 +19,12 @@ public class Order {
 
     private Long restaurantId;
 
+    private String deliveryAddress;
+
+    private String contactName;
+
+    private String contactPhone;
+
     private OrderStatus status = OrderStatus.CREATED;
 
     private List<OrderItem> items = new ArrayList<>();
@@ -54,6 +60,13 @@ public class Order {
     public void setRestaurantId(Long restaurantId) {
         this.restaurantId = restaurantId;
     }
+
+    public String getDeliveryAddress() { return deliveryAddress; }
+    public void setDeliveryAddress(String deliveryAddress) { this.deliveryAddress = deliveryAddress; }
+    public String getContactName() { return contactName; }
+    public void setContactName(String contactName) { this.contactName = contactName; }
+    public String getContactPhone() { return contactPhone; }
+    public void setContactPhone(String contactPhone) { this.contactPhone = contactPhone; }
 
     public OrderStatus getStatus() {
         return status;

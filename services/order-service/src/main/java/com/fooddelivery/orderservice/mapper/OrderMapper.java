@@ -16,6 +16,9 @@ public class OrderMapper {
         Order order = new Order();
         order.setUserId(request.userId());
         order.setRestaurantId(request.restaurantId());
+        order.setDeliveryAddress(request.deliveryAddress().trim());
+        order.setContactName(request.contactName().trim());
+        order.setContactPhone(request.contactPhone().trim());
         order.setItems(request.items().stream().map(this::toEntity).toList());
 
         BigDecimal subtotal = order.getItems().stream()
@@ -33,6 +36,9 @@ public class OrderMapper {
                 order.getId(),
                 order.getUserId(),
                 order.getRestaurantId(),
+                order.getDeliveryAddress(),
+                order.getContactName(),
+                order.getContactPhone(),
                 order.getStatus(),
                 order.getItems().stream().map(this::toResponse).toList(),
                 order.getSubtotal(),

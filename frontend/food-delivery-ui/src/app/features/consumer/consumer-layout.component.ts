@@ -52,6 +52,9 @@ import { CreateOrderRequest, Order } from '../../core/models';
 
         <form class="checkout" (ngSubmit)="placeOrder()">
           <p class="muted">Ordering as {{ auth.user()?.firstName }} {{ auth.user()?.lastName }}</p>
+          <input required placeholder="Delivery address" [value]="deliveryAddress()" (input)="deliveryAddress.set($any($event.target).value)">
+          <input required placeholder="Contact name" [value]="contactName()" (input)="contactName.set($any($event.target).value)">
+          <input required placeholder="Contact phone" [value]="contactPhone()" (input)="contactPhone.set($any($event.target).value)">
           <button type="submit" [disabled]="notifications.saving() || cart.items().length === 0">Place Order</button>
         </form>
 
@@ -74,8 +77,16 @@ export class ConsumerLayoutComponent implements OnInit {
   private readonly api = inject(FoodDeliveryApi);
 
   protected readonly placedOrder = signal<Order | null>(null);
+  protected readonly deliveryAddress = signal('');
+  protected readonly contactName = signal('');
+  protected readonly contactPhone = signal('');
 
   ngOnInit(): void {
+    const user = this.auth.user();
+    if (user) {
+      this.contactName.set(`${user.firstName} ${user.lastName}`);
+      this.contactPhone.set(user.phoneNumber);
+    }
     this.notifications.loading.set(true);
     this.store.loadPublicData()
       .pipe(finalize(() => this.notifications.loading.set(false)))
@@ -88,11 +99,18 @@ export class ConsumerLayoutComponent implements OnInit {
   protected placeOrder(): void {
     const user = this.auth.user();
     if (!user || this.cart.items().length === 0) return;
+    if (!this.deliveryAddress().trim() || !this.contactName().trim() || !this.contactPhone().trim()) {
+      this.notifications.error.set('Please provide delivery and contact details.');
+      return;
+    }
 
     const firstItem = this.cart.items()[0];
     const request: CreateOrderRequest = {
       userId: user.id,
       restaurantId: firstItem.restaurantId,
+      deliveryAddress: this.deliveryAddress().trim(),
+      contactName: this.contactName().trim(),
+      contactPhone: this.contactPhone().trim(),
       items: this.cart.items().map(({ restaurantId, ...item }) => item)
     };
 
