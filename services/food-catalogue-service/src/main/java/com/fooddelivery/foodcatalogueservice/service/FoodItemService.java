@@ -9,6 +9,9 @@ import com.fooddelivery.foodcatalogueservice.mapper.FoodItemMapper;
 import com.fooddelivery.foodcatalogueservice.repository.FoodItemRepository;
 import com.fooddelivery.foodcatalogueservice.client.RestaurantClient;
 import java.util.List;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,22 +29,26 @@ public class FoodItemService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "foodItemLists", allEntries = true)
     public FoodItemResponse createFoodItem(CreateFoodItemRequest request, Long ownerId) {
         requireOwnership(request.restaurantId(), ownerId);
         return createFoodItem(request);
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "foodItemLists", allEntries = true)
     public FoodItemResponse createFoodItem(CreateFoodItemRequest request) {
         return foodItemMapper.toResponse(foodItemRepository.save(foodItemMapper.toEntity(request)));
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "foodItems", key = "#id")
     public FoodItemResponse getFoodItem(Long id) {
         return foodItemMapper.toResponse(findFoodItem(id));
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "foodItemLists", key = "{#restaurantId, #available, #category}")
     public List<FoodItemResponse> listFoodItems(Long restaurantId, Boolean available, String category) {
         List<FoodItem> foodItems;
         if (category != null && restaurantId != null) {
@@ -60,12 +67,17 @@ public class FoodItemService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "foodItemLists", key = "'owner:' + #restaurantId + ':' + #ownerId")
     public List<FoodItemResponse> listOwnedFoodItems(Long restaurantId, Long ownerId) {
         requireOwnership(restaurantId, ownerId);
         return listFoodItems(restaurantId, null, null);
     }
 
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "foodItems", key = "#id"),
+            @CacheEvict(cacheNames = "foodItemLists", allEntries = true)
+    })
     public FoodItemResponse updateFoodItem(Long id, UpdateFoodItemRequest request, Long ownerId) {
         FoodItem foodItem = findFoodItem(id);
         requireOwnership(foodItem.getRestaurantId(), ownerId);
@@ -73,6 +85,10 @@ public class FoodItemService {
     }
 
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "foodItems", key = "#id"),
+            @CacheEvict(cacheNames = "foodItemLists", allEntries = true)
+    })
     public FoodItemResponse updateFoodItem(Long id, UpdateFoodItemRequest request) {
         return applyUpdate(findFoodItem(id), request);
     }

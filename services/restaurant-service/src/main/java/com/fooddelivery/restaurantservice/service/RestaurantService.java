@@ -9,6 +9,9 @@ import com.fooddelivery.restaurantservice.exception.ResourceNotFoundException;
 import com.fooddelivery.restaurantservice.mapper.RestaurantMapper;
 import com.fooddelivery.restaurantservice.repository.RestaurantRepository;
 import java.util.List;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,11 +27,13 @@ public class RestaurantService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "restaurantLists", allEntries = true)
     public RestaurantResponse createRestaurant(CreateRestaurantRequest request) {
         return createRestaurant(request, null);
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "restaurantLists", allEntries = true)
     public RestaurantResponse createRestaurant(CreateRestaurantRequest request, Long ownerId) {
         ensureNameAvailable(request.name().trim(), null);
         ensureContactEmailAvailable(request.contactEmail().trim().toLowerCase(), null);
@@ -40,11 +45,13 @@ public class RestaurantService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "restaurants", key = "#id")
     public RestaurantResponse getRestaurant(Long id) {
         return restaurantMapper.toResponse(findRestaurant(id));
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "restaurantLists", key = "{#city, #active}")
     public List<RestaurantResponse> listRestaurants(String city, Boolean active) {
         List<Restaurant> restaurants;
         if (city != null && active != null) {
@@ -63,6 +70,10 @@ public class RestaurantService {
     }
 
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "restaurants", key = "#id"),
+            @CacheEvict(cacheNames = "restaurantLists", allEntries = true)
+    })
     public RestaurantResponse updateRestaurant(Long id, UpdateRestaurantRequest request) {
         return applyUpdate(findRestaurant(id), request);
     }
@@ -108,6 +119,7 @@ public class RestaurantService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "restaurantLists", key = "'owner:' + #ownerId")
     public List<RestaurantResponse> listByOwner(Long ownerId) {
         return restaurantRepository.findByOwnerId(ownerId).stream()
                 .map(restaurantMapper::toResponse)
@@ -115,6 +127,10 @@ public class RestaurantService {
     }
 
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "restaurants", key = "#id"),
+            @CacheEvict(cacheNames = "restaurantLists", allEntries = true)
+    })
     public RestaurantResponse updateOwnedRestaurant(Long id, Long ownerId, UpdateRestaurantRequest request) {
         Restaurant restaurant = findRestaurant(id);
         if (!ownerId.equals(restaurant.getOwnerId())) {
