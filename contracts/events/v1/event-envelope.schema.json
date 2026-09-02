@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fooddelivery.example/contracts/events/v1/event-envelope.schema.json",
+  "title": "Food delivery event envelope v1",
+  "type": "object",
+  "required": ["eventId", "eventType", "eventVersion", "aggregateId", "correlationId", "causationId", "occurredAt", "data"],
+  "properties": {
+    "eventId": { "type": "string", "format": "uuid" },
+    "eventType": { "type": "string" },
+    "eventVersion": { "const": 1 },
+    "aggregateId": { "type": "string" },
+    "correlationId": { "type": "string" },
+    "causationId": { "type": "string" },
+    "occurredAt": { "type": "string", "format": "date-time" },
+    "data": { "type": "object" }
+  },
+  "additionalProperties": false
+}

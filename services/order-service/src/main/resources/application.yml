@@ -7,6 +7,11 @@ spring:
   data:
     mongodb:
       uri: ${ORDER_SERVICE_MONGODB_URI:mongodb://order_service:order_service_password@[::1]:27017/order_service_db?authSource=admin}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      properties:
+        enable.idempotence: true
 
 management:
   endpoints:

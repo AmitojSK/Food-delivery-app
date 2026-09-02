@@ -4,6 +4,11 @@ server:
 spring:
   application:
     name: delivery-service
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: delivery-service-v1
+      auto-offset-reset: earliest
   datasource:
     url: ${DELIVERY_SERVICE_DB_URL:jdbc:mysql://localhost:3310/delivery_service_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
     username: ${DELIVERY_SERVICE_DB_USERNAME:delivery_service}
