@@ -10,6 +10,7 @@ import com.fooddelivery.deliveryservice.exception.DeliveryValidationException;
 import com.fooddelivery.deliveryservice.exception.ResourceNotFoundException;
 import com.fooddelivery.deliveryservice.mapper.DeliveryMapper;
 import com.fooddelivery.deliveryservice.repository.DeliveryRepository;
+import com.fooddelivery.deliveryservice.event.DeliveryEventPublisher;
 import java.time.Instant;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -20,10 +21,13 @@ public class DeliveryService {
 
     private final DeliveryRepository deliveryRepository;
     private final DeliveryMapper deliveryMapper;
+    private final DeliveryEventPublisher eventPublisher;
 
-    public DeliveryService(DeliveryRepository deliveryRepository, DeliveryMapper deliveryMapper) {
+    public DeliveryService(DeliveryRepository deliveryRepository, DeliveryMapper deliveryMapper,
+                           DeliveryEventPublisher eventPublisher) {
         this.deliveryRepository = deliveryRepository;
         this.deliveryMapper = deliveryMapper;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -69,7 +73,9 @@ public class DeliveryService {
         if (deliveryRepository.assignPendingDelivery(id, driverId) != 1) {
             throw new DeliveryValidationException("Delivery is no longer available for pickup");
         }
-        return deliveryMapper.toResponse(findDelivery(id));
+        Delivery assigned = findDelivery(id);
+        eventPublisher.publish(assigned, "DeliveryAssigned");
+        return deliveryMapper.toResponse(assigned);
     }
 
     @Transactional
@@ -88,7 +94,15 @@ public class DeliveryService {
         } else if (request.status() == DeliveryStatus.DELIVERED) {
             delivery.setDeliveredAt(Instant.now());
         }
-        return deliveryMapper.toResponse(deliveryRepository.save(delivery));
+        Delivery saved = deliveryRepository.save(delivery);
+        eventPublisher.publish(saved, switch (saved.getStatus()) {
+            case PICKED_UP -> "DeliveryPickedUp";
+            case IN_TRANSIT -> "DeliveryInTransit";
+            case DELIVERED -> "DeliveryCompleted";
+            case CANCELLED -> "DeliveryCancelled";
+            default -> throw new IllegalStateException("Unexpected delivery event status");
+        });
+        return deliveryMapper.toResponse(saved);
     }
 
     @Transactional
