@@ -1,6 +1,6 @@
 package com.fooddelivery.orderservice.config;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -15,9 +15,15 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @ConditionalOnProperty(name = "spring.data.mongodb.uri")
 public class MongoConfig {
 
+    // @ConditionalOnBean(MongoDatabaseFactory.class) here would be evaluated while this
+    // (regular, component-scanned) configuration class is processed, which is not guaranteed
+    // to happen after MongoAutoConfiguration registers that bean — Spring's own docs call this
+    // ordering unreliable. Resolving it lazily via ObjectProvider at bean-creation time (well
+    // after all bean definitions, including auto-configured ones, are registered) avoids the
+    // race: it silently yields no bean in tests that exclude Mongo autoconfiguration entirely.
     @Bean
-    @ConditionalOnBean(MongoDatabaseFactory.class)
-    MongoTransactionManager transactionManager(MongoDatabaseFactory databaseFactory) {
-        return new MongoTransactionManager(databaseFactory);
+    MongoTransactionManager transactionManager(ObjectProvider<MongoDatabaseFactory> databaseFactory) {
+        MongoDatabaseFactory factory = databaseFactory.getIfAvailable();
+        return factory != null ? new MongoTransactionManager(factory) : null;
     }
 }

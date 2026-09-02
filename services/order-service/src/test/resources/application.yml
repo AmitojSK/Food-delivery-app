@@ -8,6 +8,14 @@ spring:
       auto-startup: false
     consumer:
       group-id: order-service-test
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.value.default.type: java.util.LinkedHashMap
+        spring.json.trusted.packages: java.util
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
   cloud:
     discovery:
       enabled: false
