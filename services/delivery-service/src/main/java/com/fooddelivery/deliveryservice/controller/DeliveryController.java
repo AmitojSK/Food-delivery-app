@@ -32,18 +32,20 @@ public class DeliveryController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'RESTAURANT_OWNER')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<DeliveryResponse> createDelivery(@Valid @RequestBody CreateDeliveryRequest request) {
         DeliveryResponse delivery = deliveryService.createDelivery(request);
         return ResponseEntity.created(URI.create("/api/v1/deliveries/" + delivery.id())).body(delivery);
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("@deliverySecurity.canReadDelivery(#id, authentication)")
     public ResponseEntity<DeliveryResponse> getDelivery(@PathVariable Long id) {
         return ResponseEntity.ok(deliveryService.getDelivery(id));
     }
 
     @GetMapping("/order/{orderId}")
+    @PreAuthorize("@deliverySecurity.canReadOrderDelivery(#orderId, authentication)")
     public ResponseEntity<DeliveryResponse> getDeliveryByOrderId(@PathVariable String orderId) {
         return ResponseEntity.ok(deliveryService.getDeliveryByOrderId(orderId));
     }

@@ -4,6 +4,7 @@ import com.fooddelivery.userservice.dto.CreateUserRequest;
 import com.fooddelivery.userservice.dto.UpdateUserRequest;
 import com.fooddelivery.userservice.dto.UserResponse;
 import com.fooddelivery.userservice.entity.User;
+import com.fooddelivery.userservice.entity.UserRole;
 import com.fooddelivery.userservice.exception.DuplicateResourceException;
 import com.fooddelivery.userservice.exception.ResourceNotFoundException;
 import com.fooddelivery.userservice.mapper.UserMapper;
@@ -34,6 +35,20 @@ public class UserService {
         ensurePhoneNumberAvailable(phoneNumber, null);
 
         User user = userMapper.toEntity(request);
+        user.setPasswordHash(passwordEncoder.encode(request.password()));
+        return userMapper.toResponse(userRepository.save(user));
+    }
+
+    /** Public signup always creates the least-privileged account type. */
+    @Transactional
+    public UserResponse registerCustomer(CreateUserRequest request) {
+        String email = request.email().trim().toLowerCase();
+        String phoneNumber = request.phoneNumber().trim();
+        ensureEmailAvailable(email, null);
+        ensurePhoneNumberAvailable(phoneNumber, null);
+
+        User user = userMapper.toEntity(request);
+        user.setRole(UserRole.CUSTOMER);
         user.setPasswordHash(passwordEncoder.encode(request.password()));
         return userMapper.toResponse(userRepository.save(user));
     }

@@ -30,7 +30,7 @@ public class AuthenticationService {
 
     @Transactional
     public AuthenticationResponse register(CreateUserRequest request) {
-        UserResponse user = userService.createUser(request);
+        UserResponse user = userService.registerCustomer(request);
         User savedUser = userRepository.findById(user.id())
                 .orElseThrow(() -> new IllegalStateException("Registered user could not be loaded"));
         return authenticatedResponse(savedUser, user);

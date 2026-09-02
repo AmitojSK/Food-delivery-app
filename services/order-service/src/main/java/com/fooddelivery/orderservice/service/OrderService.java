@@ -66,11 +66,13 @@ public class OrderService {
 
     public OrderResponse updateOrderStatus(String id, UpdateOrderStatusRequest request) {
         Order order = findOrder(id);
+        validateStatusTransition(order.getStatus(), request.status());
         order.setStatus(request.status());
         return orderMapper.toResponse(orderRepository.save(order));
     }
 
-    public List<OrderResponse> listOrdersByRestaurant(Long restaurantId, OrderStatus status) {
+    public List<OrderResponse> listOrdersByRestaurant(Long restaurantId, Long ownerId, OrderStatus status) {
+        validateRestaurantOwnership(restaurantId, ownerId);
         List<Order> orders;
         if (status != null) {
             orders = orderRepository.findByRestaurantIdAndStatus(restaurantId, status);
@@ -80,11 +82,14 @@ public class OrderService {
         return orders.stream().map(orderMapper::toResponse).toList();
     }
 
-    public OrderResponse updateOrderStatusForRestaurant(String id, Long restaurantId, UpdateOrderStatusRequest request) {
+    public OrderResponse updateOrderStatusForRestaurant(
+            String id, Long restaurantId, Long ownerId, UpdateOrderStatusRequest request) {
+        validateRestaurantOwnership(restaurantId, ownerId);
         Order order = findOrder(id);
         if (!order.getRestaurantId().equals(restaurantId)) {
             throw new ResourceNotFoundException("Order with id " + id + " was not found");
         }
+        validateStatusTransition(order.getStatus(), request.status());
         order.setStatus(request.status());
         return orderMapper.toResponse(orderRepository.save(order));
     }
@@ -110,6 +115,19 @@ public class OrderService {
         }
     }
 
+    private void validateRestaurantOwnership(Long restaurantId, Long ownerId) {
+        RestaurantResponse restaurant;
+        try {
+            restaurant = serviceClient.getRestaurant(restaurantId);
+        } catch (Exception e) {
+            log.error("Failed to verify ownership for restaurant {}", restaurantId, e);
+            throw new OrderValidationException("Unable to verify restaurant ownership. Please try again later.");
+        }
+        if (restaurant == null || restaurant.ownerId() == null || !restaurant.ownerId().equals(ownerId)) {
+            throw new ResourceNotFoundException("Restaurant with id " + restaurantId + " was not found");
+        }
+    }
+
     private void validateFoodItems(Long restaurantId, List<CreateOrderItemRequest> items) {
         for (CreateOrderItemRequest item : items) {
             FoodItemResponse foodItem;
@@ -129,6 +147,19 @@ public class OrderService {
             if (!foodItem.available()) {
                 throw new OrderValidationException("Food item '" + foodItem.name() + "' is not currently available");
             }
+        }
+    }
+
+    private void validateStatusTransition(OrderStatus from, OrderStatus to) {
+        boolean allowed = switch (from) {
+            case CREATED -> to == OrderStatus.CONFIRMED || to == OrderStatus.CANCELLED;
+            case CONFIRMED -> to == OrderStatus.PREPARING || to == OrderStatus.CANCELLED;
+            case PREPARING -> to == OrderStatus.OUT_FOR_DELIVERY || to == OrderStatus.CANCELLED;
+            case OUT_FOR_DELIVERY -> to == OrderStatus.DELIVERED || to == OrderStatus.CANCELLED;
+            default -> false;
+        };
+        if (!allowed) {
+            throw new OrderValidationException("Cannot transition order from " + from + " to " + to);
         }
     }
 }

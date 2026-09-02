@@ -66,14 +66,10 @@ public class DeliveryService {
 
     @Transactional
     public DeliveryResponse acceptDelivery(Long id, Long driverId) {
-        Delivery delivery = findDelivery(id);
-        if (delivery.getStatus() != DeliveryStatus.PENDING) {
+        if (deliveryRepository.assignPendingDelivery(id, driverId) != 1) {
             throw new DeliveryValidationException("Delivery is no longer available for pickup");
         }
-        delivery.setDriverId(driverId);
-        delivery.setStatus(DeliveryStatus.ASSIGNED);
-        delivery.setAssignedAt(Instant.now());
-        return deliveryMapper.toResponse(deliveryRepository.save(delivery));
+        return deliveryMapper.toResponse(findDelivery(id));
     }
 
     @Transactional
@@ -81,6 +77,10 @@ public class DeliveryService {
         Delivery delivery = findDelivery(id);
         if (!driverId.equals(delivery.getDriverId())) {
             throw new DeliveryValidationException("You are not assigned to this delivery");
+        }
+        if (!isAllowedTransition(delivery.getStatus(), request.status())) {
+            throw new DeliveryValidationException(
+                    "Cannot transition delivery from " + delivery.getStatus() + " to " + request.status());
         }
         delivery.setStatus(request.status());
         if (request.status() == DeliveryStatus.PICKED_UP) {
@@ -105,5 +105,14 @@ public class DeliveryService {
     private Delivery findDelivery(Long id) {
         return deliveryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Delivery with id " + id + " was not found"));
+    }
+
+    private boolean isAllowedTransition(DeliveryStatus from, DeliveryStatus to) {
+        return switch (from) {
+            case ASSIGNED -> to == DeliveryStatus.PICKED_UP || to == DeliveryStatus.CANCELLED;
+            case PICKED_UP -> to == DeliveryStatus.IN_TRANSIT || to == DeliveryStatus.CANCELLED;
+            case IN_TRANSIT -> to == DeliveryStatus.DELIVERED || to == DeliveryStatus.CANCELLED;
+            default -> false;
+        };
     }
 }
