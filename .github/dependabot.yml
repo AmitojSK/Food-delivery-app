@@ -1,93 +1,150 @@
 version: 2
 updates:
   # --- Backend services (Maven) ---
+  # Each directory groups all its dependency bumps into a single PR instead of
+  # one-per-package, and caps how many PRs can be open at once — without this,
+  # a single weekly check opens dozens of PRs and floods the CI job queue.
   - package-ecosystem: "maven"
     directory: "/services/discovery-server"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 3
+    groups:
+      all-dependencies:
+        patterns: ["*"]
   - package-ecosystem: "maven"
     directory: "/services/api-gateway"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 3
+    groups:
+      all-dependencies:
+        patterns: ["*"]
   - package-ecosystem: "maven"
     directory: "/services/user-service"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 3
+    groups:
+      all-dependencies:
+        patterns: ["*"]
   - package-ecosystem: "maven"
     directory: "/services/restaurant-service"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 3
+    groups:
+      all-dependencies:
+        patterns: ["*"]
   - package-ecosystem: "maven"
     directory: "/services/food-catalogue-service"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 3
+    groups:
+      all-dependencies:
+        patterns: ["*"]
   - package-ecosystem: "maven"
     directory: "/services/order-service"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 3
+    groups:
+      all-dependencies:
+        patterns: ["*"]
   - package-ecosystem: "maven"
     directory: "/services/delivery-service"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 3
+    groups:
+      all-dependencies:
+        patterns: ["*"]
 
   # --- Frontend apps (npm) ---
   - package-ecosystem: "npm"
     directory: "/frontend/food-delivery-ui"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 3
+    groups:
+      all-dependencies:
+        patterns: ["*"]
   - package-ecosystem: "npm"
     directory: "/frontend/partner-app"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 3
+    groups:
+      all-dependencies:
+        patterns: ["*"]
   - package-ecosystem: "npm"
     directory: "/frontend/delivery-app"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 3
+    groups:
+      all-dependencies:
+        patterns: ["*"]
 
   # --- Container base images ---
   - package-ecosystem: "docker"
     directory: "/services/discovery-server"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 2
   - package-ecosystem: "docker"
     directory: "/services/api-gateway"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 2
   - package-ecosystem: "docker"
     directory: "/services/user-service"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 2
   - package-ecosystem: "docker"
     directory: "/services/restaurant-service"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 2
   - package-ecosystem: "docker"
     directory: "/services/food-catalogue-service"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 2
   - package-ecosystem: "docker"
     directory: "/services/order-service"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 2
   - package-ecosystem: "docker"
     directory: "/services/delivery-service"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 2
   - package-ecosystem: "docker"
     directory: "/frontend/food-delivery-ui"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 2
   - package-ecosystem: "docker"
     directory: "/frontend/partner-app"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 2
   - package-ecosystem: "docker"
     directory: "/frontend/delivery-app"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 2
 
   # --- CI workflow actions ---
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 3
+    groups:
+      all-actions:
+        patterns: ["*"]
