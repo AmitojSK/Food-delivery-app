@@ -105,6 +105,9 @@ jobs:
     name: docker-build
     runs-on: ubuntu-latest
     needs: [backend, frontend]
+    permissions:
+      contents: read
+      packages: write
     env:
       COMPOSE_PROJECT_NAME: fooddelivery
     steps:
@@ -118,4 +121,25 @@ jobs:
             echo "::group::Trivy scan: $image"
             trivy image --severity HIGH,CRITICAL --exit-code 0 "$image"
             echo "::endgroup::"
+          done
+      - name: Log in to GHCR
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Tag and push immutable images to GHCR
+        if: github.event_name == 'push'
+        run: |
+          owner=$(printf '%s' "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          branch=$(printf '%s' "${{ github.ref_name }}" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9._-' '-')
+          images="fooddelivery-discovery-server fooddelivery-api-gateway fooddelivery-user-service fooddelivery-restaurant-service fooddelivery-food-catalogue-service fooddelivery-order-service fooddelivery-delivery-service fooddelivery-frontend fooddelivery-partner-app fooddelivery-delivery-app"
+          for image in $images; do
+            name=${image#fooddelivery-}
+            target="ghcr.io/$owner/food-delivery-app-$name"
+            docker tag "$image" "$target:${{ github.sha }}"
+            docker tag "$image" "$target:$branch"
+            docker push "$target:${{ github.sha }}"
+            docker push "$target:$branch"
           done
