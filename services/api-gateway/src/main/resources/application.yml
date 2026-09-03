@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: ${PORT:8080}
 
 spring:
   application:
@@ -16,7 +16,7 @@ spring:
         # Rate-limited routes are matched before their general counterparts below,
         # since Spring Cloud Gateway dispatches to the first predicate match.
         - id: user-service-auth
-          uri: lb://USER-SERVICE
+          uri: ${USER_SERVICE_URI:lb://USER-SERVICE}
           predicates:
             - Path=/user-api/api/v1/auth/**
           filters:
@@ -28,25 +28,25 @@ spring:
                 redis-rate-limiter.requestedTokens: 1
                 key-resolver: "#{@rateLimitKeyResolver}"
         - id: user-service
-          uri: lb://USER-SERVICE
+          uri: ${USER_SERVICE_URI:lb://USER-SERVICE}
           predicates:
             - Path=/user-api/**
           filters:
             - StripPrefix=1
         - id: restaurant-service
-          uri: lb://RESTAURANT-SERVICE
+          uri: ${RESTAURANT_SERVICE_URI:lb://RESTAURANT-SERVICE}
           predicates:
             - Path=/restaurant-api/**
           filters:
             - StripPrefix=1
         - id: food-catalogue-service
-          uri: lb://FOOD-CATALOGUE-SERVICE
+          uri: ${FOOD_CATALOGUE_SERVICE_URI:lb://FOOD-CATALOGUE-SERVICE}
           predicates:
             - Path=/catalogue-api/**
           filters:
             - StripPrefix=1
         - id: order-service-checkout
-          uri: lb://ORDER-SERVICE
+          uri: ${ORDER_SERVICE_URI:lb://ORDER-SERVICE}
           predicates:
             - Path=/order-api/api/v1/orders
             - Method=POST
@@ -59,13 +59,13 @@ spring:
                 redis-rate-limiter.requestedTokens: 1
                 key-resolver: "#{@rateLimitKeyResolver}"
         - id: order-service
-          uri: lb://ORDER-SERVICE
+          uri: ${ORDER_SERVICE_URI:lb://ORDER-SERVICE}
           predicates:
             - Path=/order-api/**
           filters:
             - StripPrefix=1
         - id: delivery-service-accept
-          uri: lb://DELIVERY-SERVICE
+          uri: ${DELIVERY_SERVICE_URI:lb://DELIVERY-SERVICE}
           predicates:
             - Path=/delivery-api/api/v1/deliveries/*/accept
             - Method=POST
@@ -78,7 +78,7 @@ spring:
                 redis-rate-limiter.requestedTokens: 1
                 key-resolver: "#{@rateLimitKeyResolver}"
         - id: delivery-service
-          uri: lb://DELIVERY-SERVICE
+          uri: ${DELIVERY_SERVICE_URI:lb://DELIVERY-SERVICE}
           predicates:
             - Path=/delivery-api/**
           filters:

@@ -1,0 +1,25 @@
+server {
+    listen 80;
+
+    root /usr/share/nginx/html;
+    index index.html;
+
+    proxy_ssl_server_name on;
+    proxy_set_header Host $proxy_host;
+
+    location /user-api/ {
+        proxy_pass ${API_GATEWAY_URL}/user-api/;
+    }
+
+    location /delivery-api/ {
+        proxy_pass ${API_GATEWAY_URL}/delivery-api/;
+    }
+
+    location /order-api/ {
+        proxy_pass ${API_GATEWAY_URL}/order-api/;
+    }
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
