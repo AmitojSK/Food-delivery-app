@@ -11,8 +11,8 @@ The interesting parts are not the CRUD — they are the transactional outbox/inb
 | Application | URL |
 |---|---|
 | Customer app | https://food-delivery-ui-n8c3.onrender.com |
-| Restaurant partner app | _(add URL)_ |
-| Delivery partner app | _(add URL)_ |
+| Restaurant partner app | https://partner-app-65z2.onrender.com |
+| Delivery partner app | https://delivery-app-csdw.onrender.com |
 | API gateway | https://api-gateway-3nle.onrender.com |
 
 > **Cold starts.** Every service runs on Render's free tier, which spins instances down after 15 minutes of inactivity. The first request after an idle period can take 60–90 seconds, and a request routed through the gateway to a sleeping backend will surface as a `502`. Run `scripts/warm-up.ps1` (Windows) or `scripts/warm-up.sh` a few minutes beforehand to wake everything in parallel.

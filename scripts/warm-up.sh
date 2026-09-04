@@ -20,6 +20,8 @@ SERVICES=(
   "https://delivery-service-gxjo.onrender.com/actuator/health"
   "https://api-gateway-3nle.onrender.com/actuator/health"
   "https://food-delivery-ui-n8c3.onrender.com/"
+  "https://partner-app-65z2.onrender.com/"
+  "https://delivery-app-csdw.onrender.com/"
 )
 
 echo "Warming ${#SERVICES[@]} services (cold starts take up to ~2 min each)..."
