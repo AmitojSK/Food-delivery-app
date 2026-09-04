@@ -1,201 +1,227 @@
-# Food Delivery App
+# Food Delivery Platform
 
-Production-oriented food delivery platform built iteratively with independent Spring Boot services.
+An event-driven food delivery platform built as a distributed system: seven Spring Boot services, three Angular applications, and a Kafka event backbone, deployed across three cloud providers for roughly $5/month.
 
-## Iteration 1
+The interesting parts are not the CRUD — they are the transactional outbox/inbox pattern that makes the order-to-delivery workflow exactly-once from the application's perspective, the ownership-based authorization model, and a deployment topology chosen under a real cost constraint.
 
-Implemented services:
+---
 
-- `services/discovery-server`
-- `services/user-service`
-- `services/restaurant-service`
-- `services/food-catalogue-service`
-- `services/order-service`
+## Live demo
 
-Each service is an independent Maven Spring Boot application. `discovery-server` provides Eureka service discovery. MySQL-backed services use Java 21, MVC layering, Spring Web, Spring Data JPA, Flyway migrations, validation, centralized exception handling, and Eureka client registration. `order-service` uses MongoDB with embedded order item documents.
+| Application | URL |
+|---|---|
+| Customer app | https://food-delivery-ui-n8c3.onrender.com |
+| Restaurant partner app | _(add URL)_ |
+| Delivery partner app | _(add URL)_ |
+| API gateway | https://api-gateway-3nle.onrender.com |
 
-## Local Infrastructure
+> **Cold starts.** Every service runs on Render's free tier, which spins instances down after 15 minutes of inactivity. The first request after an idle period can take 60–90 seconds, and a request routed through the gateway to a sleeping backend will surface as a `502`. Run `scripts/warm-up.ps1` (Windows) or `scripts/warm-up.sh` a few minutes beforehand to wake everything in parallel.
 
-Start MySQL databases:
+Demo accounts for the restaurant-owner and delivery-partner roles are available on request — they are deliberately not published here, since anyone could otherwise mutate the demo data.
+
+---
+
+## Architecture
+
+```mermaid
+flowchart TB
+    subgraph clients [Angular applications]
+        CUST[Customer app]
+        PART[Restaurant partner app]
+        DELV[Delivery partner app]
+    end
+
+    GW[API gateway<br/>routing · JWT validation · rate limiting]
+
+    subgraph services [Spring Boot services]
+        US[user-service]
+        RS[restaurant-service]
+        FC[food-catalogue-service]
+        OS[order-service]
+        DS[delivery-service]
+    end
+
+    subgraph data [Data stores]
+        MYSQL[(MySQL ×4)]
+        MONGO[(MongoDB<br/>replica set)]
+        REDIS[(Redis)]
+    end
+
+    KAFKA{{Kafka}}
+
+    CUST & PART & DELV --> GW
+    GW --> US & RS & FC & OS & DS
+
+    US --> MYSQL
+    RS --> MYSQL
+    FC --> MYSQL
+    DS --> MYSQL
+    OS --> MONGO
+
+    GW -.rate limits.-> REDIS
+    RS -.cache-aside.-> REDIS
+    FC -.cache-aside.-> REDIS
+    DS -.driver location TTL.-> REDIS
+
+    OS <-->|order.events.v1<br/>delivery.events.v1| KAFKA
+    DS <-->|order.events.v1<br/>delivery.events.v1| KAFKA
+```
+
+| Service | Store | Responsibility |
+|---|---|---|
+| `api-gateway` | Redis | Single entry point; routes by path prefix, validates JWTs, rate-limits auth/checkout/accept endpoints |
+| `user-service` | MySQL | Registration, login, JWT issuance, role management |
+| `restaurant-service` | MySQL + Redis | Restaurants and ownership; cached reads |
+| `food-catalogue-service` | MySQL + Redis | Menus and food items; cached reads |
+| `order-service` | MongoDB + Kafka | Order aggregate, checkout, transactional outbox |
+| `delivery-service` | MySQL + Redis + Kafka | Deliveries, driver assignment, live location |
+| `discovery-server` | — | Eureka, **local development only** (see below) |
+
+Only three synchronous service-to-service calls exist in the entire system — catalogue→restaurant and order→{restaurant, catalogue}, all for ownership and validation checks. Everything else is asynchronous over Kafka.
+
+---
+
+## Order-to-delivery workflow
+
+The core flow is event-driven and designed to survive restarts, duplicates, and partial failures.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as Customer
+    participant OS as order-service
+    participant M as MongoDB
+    participant K as Kafka
+    participant DS as delivery-service
+    participant D as Driver
+
+    C->>OS: POST /orders (checkout)
+    OS->>M: order + outbox record<br/>(single transaction)
+    Note over OS,M: Multi-document transaction —<br/>requires a replica set
+    OS->>K: publish OrderCreated (after commit)
+
+    Note over OS: Restaurant confirms, prepares,<br/>marks ready for pickup
+    OS->>K: OrderReadyForPickup
+
+    K->>DS: consume OrderReadyForPickup
+    DS->>DS: inbox check — already processed?
+    DS->>DS: create PENDING delivery (idempotent)
+
+    D->>DS: POST /deliveries/{id}/accept
+    Note over DS: Conditional update —<br/>exactly one driver wins
+    DS->>K: DeliveryAssigned
+
+    D->>DS: pickup → in transit → delivered
+    DS->>K: DeliveryPickedUp, DeliveryCompleted
+    K->>OS: consume delivery events
+    OS->>M: update customer-visible order status
+    C->>OS: order reaches DELIVERED
+```
+
+**Reliability mechanisms**
+
+- **Transactional outbox** — the aggregate update and the outbox record commit in one MongoDB transaction, so an event can never be published for a write that rolled back. A publisher marks records sent only after broker acknowledgement.
+- **Inbox / idempotency** — consumers persist processed event IDs, so redelivery cannot duplicate a delivery or repeat a side effect.
+- **Atomic driver assignment** — acceptance uses a conditional database update, so concurrent accepts resolve to exactly one driver.
+- **Retries and DLQ** — bounded exponential backoff via `DefaultErrorHandler`, with poison messages routed to dead-letter topics (explicitly provisioned, since auto-create is off).
+- **Versioned event envelope** — every event carries `eventId`, `eventType`, `eventVersion`, `aggregateId`, `correlationId`, `causationId`, and `occurredAt`.
+
+---
+
+## Security model
+
+- **Privilege escalation is not possible through public registration.** `POST /auth/register` always creates a `CUSTOMER`, regardless of the payload. Owner and driver accounts can only be created by an `ADMIN`.
+- **Ownership is enforced server-side.** A client-supplied `restaurantId` is never trusted; the owning service verifies the authenticated principal actually owns that restaurant before allowing writes.
+- **Scoped reads.** Drivers see only available jobs or their own; customers see only the delivery attached to their own order.
+- **State machines.** Orders and deliveries reject skipped or backward transitions rather than accepting arbitrary status writes.
+- **Rate limiting** on login, registration, checkout, and delivery acceptance — implemented in the gateway with Redis, and deliberately **failing open** if Redis is unavailable, so a cache outage cannot take down authentication.
+- **JWT** signed with a per-environment secret; validated independently by every service.
+
+---
+
+## Deployment
+
+Deliberately split across three providers to stay inside free tiers while keeping the parts that genuinely need persistence on real infrastructure.
+
+| Layer | Platform | Cost |
+|---|---|---|
+| 9 application services (6 backend + 3 frontends) | Render (free) | $0 |
+| MongoDB (replica set — required for transactions) | MongoDB Atlas M0 | $0 |
+| MySQL ×4, Kafka (KRaft), Redis | Hostinger VPS, Docker Compose | ~$5/mo |
+| **Total** | | **~$5/mo** |
+
+**Eureka is not deployed.** Service discovery solves *dynamic* addressing — instances whose locations change as they scale. Render assigns every service a permanent URL, so a registry would be an extra always-on service solving a problem that no longer exists. Discovery is disabled by environment variable in the deployed environment, while `discovery-server` and the `lb://` defaults remain intact for local Compose, where addressing genuinely is dynamic. The same reasoning would apply on Kubernetes, which provides DNS-based discovery natively.
+
+Configuration is environment-driven throughout: `server.port`, gateway route targets, inter-service client URIs, and the frontends' API base URL are all injected per environment, with local Compose values as defaults, so the same images run unmodified in both places.
+
+---
+
+## Local development
+
+Everything runs from a single Compose file — no cloud dependencies.
 
 ```bash
 docker compose up -d
 ```
 
-The local database ports are:
+This starts MySQL ×4, MongoDB (single-node replica set, so transactions work locally), Kafka in KRaft mode, Redis, Eureka, all backend services, and all three frontends.
 
-- User service MySQL: `localhost:3307`
-- Restaurant service MySQL: `localhost:3308`
-- Food catalogue service MySQL: `localhost:3309`
-- Order service MongoDB: `[::1]:27017`
+| Application | URL |
+|---|---|
+| Customer app | http://localhost:4200 |
+| Restaurant partner app | http://localhost:4300 |
+| Delivery partner app | http://localhost:4400 |
+| API gateway | http://localhost:8080 |
+| Eureka dashboard | http://localhost:8761 |
 
-The service defaults already point to these local ports. Override `USER_SERVICE_DB_URL` or `RESTAURANT_SERVICE_DB_URL` only if your database is somewhere else.
-
-The order-service uses `[::1]` locally because another MongoDB process may already own `127.0.0.1:27017` on Windows. Docker Desktop publishes the MongoDB container on the IPv6 loopback listener in this setup.
-
-## Run Services
-
-Start Eureka first:
+Optional Kafka UI:
 
 ```bash
-cd services/discovery-server
-mvn spring-boot:run
+docker compose --profile dev-tools up -d
 ```
 
-User service:
+### Seeding demo data
+
+Because public registration cannot create privileged roles, seeding requires an admin. Register a normal account, then start `user-service` once with `BOOTSTRAP_ADMIN_ENABLED=true`, `BOOTSTRAP_ADMIN_EMAIL`, and `BOOTSTRAP_ADMIN_PASSWORD` to promote it, then disable the flag again. With an admin in place:
 
 ```bash
-cd services/user-service
-mvn spring-boot:run
+ADMIN_PASSWORD=... ./scripts/seed-demo-data.sh
 ```
 
-Restaurant service:
+This creates a restaurant owner, a delivery partner, a restaurant, and a menu, printing the generated credentials at the end.
 
-```bash
-cd services/restaurant-service
-mvn spring-boot:run
-```
+---
 
-Food catalogue service:
+## CI/CD
 
-```bash
-cd services/food-catalogue-service
-mvn spring-boot:run
-```
+GitHub Actions runs on every push and pull request to `develop` and `main`:
 
-Order service:
+- All 7 backend services and 3 Angular apps built and tested in parallel
+- **Integration tests against real infrastructure** via Testcontainers — the outbox/inbox Kafka pattern is verified against live MongoDB, Kafka, and MySQL rather than mocks
+- Trivy scanning of both dependency manifests (SARIF → GitHub Security tab) and all built images
+- CycloneDX SBOM generated per project
+- All 10 images tagged with commit SHA and branch, published to GHCR — and only after every test job passes
 
-```bash
-cd services/order-service
-mvn spring-boot:run
-```
+Dependabot tracks all four ecosystems (Maven, npm, Docker, Actions).
 
-API gateway (start after the discovery server and backend services):
+---
 
-```bash
-cd services/api-gateway
-mvn spring-boot:run
-```
+## Tech stack
 
-Service ports:
+**Backend** — Java 21, Spring Boot 3.4, Spring Cloud Gateway, Spring Security, Spring Data JPA / MongoDB / Redis, Flyway, Kafka
+**Frontend** — Angular 21 (standalone components), TypeScript, nginx
+**Infrastructure** — Docker, Docker Compose, GitHub Actions, Testcontainers, Trivy, Render, MongoDB Atlas
 
-- Discovery server: `http://localhost:8761`
-- API gateway: `http://localhost:8080`
-- User service: `http://localhost:8081`
-- Restaurant service: `http://localhost:8082`
-- Food catalogue service: `http://localhost:8083`
-- Order service: `http://localhost:8084`
+---
 
-After the services start, they should appear in the Eureka dashboard as:
+## Project status
 
-- `USER-SERVICE`
-- `RESTAURANT-SERVICE`
-- `FOOD-CATALOGUE-SERVICE`
-- `ORDER-SERVICE`
+**Working end to end:** authentication and RBAC, restaurant and menu management, cart and checkout, the Kafka order-to-delivery workflow with outbox/inbox and idempotency, Redis caching and rate limiting, CI through to published images, and a live multi-cloud deployment.
 
-## API Examples
+**Known gaps, deliberately tracked rather than hidden:**
 
-Register user:
-
-```bash
-curl -X POST http://localhost:8081/api/v1/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"firstName":"Asha","lastName":"Rao","email":"asha@example.com","phoneNumber":"+91 9876543210","password":"safe-password"}'
-```
-
-Create restaurant:
-
-```bash
-curl -X POST http://localhost:8082/api/v1/restaurants \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Spice Garden","cuisineType":"Indian","streetAddress":"12 MG Road","city":"Bengaluru","state":"Karnataka","postalCode":"560001","contactEmail":"hello@spicegarden.example","contactPhone":"+91 9876500000"}'
-```
-
-Create food item:
-
-```bash
-curl -X POST http://localhost:8083/api/v1/food-items \
-  -H "Content-Type: application/json" \
-  -d '{"restaurantId":1,"name":"Paneer Butter Masala","description":"Creamy tomato gravy with paneer","category":"Main Course","price":240.00}'
-```
-
-Create order:
-
-```bash
-curl -X POST http://localhost:8084/api/v1/orders \
-  -H "Content-Type: application/json" \
-  -d '{"userId":1,"restaurantId":1,"items":[{"foodItemId":1,"foodItemName":"Paneer Butter Masala","quantity":2,"unitPrice":240.00}]}'
-```
-
-## Suggested Iteration 2
-
-Implemented:
-
-- `order-service` with MongoDB
-- `food-catalogue-service` with MySQL
-- Cross-service IDs only, no shared database access
-
-## Suggested Iteration 3
-
-Implemented:
-
-- `frontend/food-delivery-ui`
-- Angular 21 standalone application
-- Typed API client and models
-- Consumer workflow for restaurant browsing, menu selection, cart, checkout, and order confirmation
-- Admin workflow for users, restaurants, food catalogue, and order management
-- Create forms for users, restaurants, food items, and orders
-- Angular dev-server proxy for local service calls
-
-Run the UI:
-
-```bash
-cd frontend/food-delivery-ui
-npm.cmd start
-```
-
-Open:
-
-```text
-http://localhost:4200
-```
-
-The Angular app calls the gateway through these proxy paths:
-
-- `/user-api` -> `http://localhost:8080` -> `USER-SERVICE`
-- `/restaurant-api` -> `http://localhost:8080` -> `RESTAURANT-SERVICE`
-- `/catalogue-api` -> `http://localhost:8080` -> `FOOD-CATALOGUE-SERVICE`
-- `/order-api` -> `http://localhost:8080` -> `ORDER-SERVICE`
-
-The UI uses its Angular proxy only to reach the gateway. The gateway discovers backend services through Eureka, validates protected JWT requests, and forwards them to the appropriate service.
-
-## Iteration 4, Step 1: User authentication
-
-`user-service` now exposes public authentication endpoints:
-
-```bash
-# Register a customer. Passwords must be 8-72 characters.
-curl -X POST http://localhost:8081/api/v1/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"firstName":"Asha","lastName":"Rao","email":"asha@example.com","phoneNumber":"+91 9876543210","password":"safe-password"}'
-
-# Sign in and receive a one-hour Bearer JWT.
-curl -X POST http://localhost:8081/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"asha@example.com","password":"safe-password"}'
-```
-
-New registrations always receive the `CUSTOMER` role. Customer tokens can read and update only their own user record; an `ADMIN` token can list, create, and manage all user records. Set a unique Base64-encoded `JWT_SECRET` in deployed environments.
-
-To promote a pre-registered account during local setup, start user-service once with `BOOTSTRAP_ADMIN_ENABLED=true`, `BOOTSTRAP_ADMIN_EMAIL`, and `BOOTSTRAP_ADMIN_PASSWORD`. The bootstrap is disabled by default and will fail fast if its credentials are missing.
-
-## Iteration 4, Step 2: Service authorization
-
-All backend services now validate the JWT issued by `user-service`. Configure the same Base64-encoded `JWT_SECRET` for user-service, restaurant-service, food-catalogue-service, and order-service in every environment.
-
-- Restaurant and food-item reads are public; their create and update operations require `ADMIN`.
-- All order endpoints require authentication. Customers can create orders only for their own token user ID and can read only their own orders. `ADMIN` can read all orders, create orders for any user, and update order status.
-
-## Iteration 4, Step 3: API gateway
-
-`services/api-gateway` provides the single local backend entry point on port `8080`. It routes the existing `/user-api`, `/restaurant-api`, `/catalogue-api`, and `/order-api` prefixes using Eureka service discovery. It permits public registration, login, restaurant browsing, and food-item browsing; all other routes require a valid JWT before they are forwarded.
+- Kafka on the VPS has no authentication and is reachable from the public internet — acceptable for a demo, not for production. TLS, SASL, and topic ACLs are the next hardening step.
+- JWTs use a shared symmetric secret; asymmetric signing (RS256/ES256), so only `user-service` holds the private key, is the intended end state.
+- No real-time push yet — clients poll rather than receiving SSE/WebSocket updates.
+- No observability stack (metrics, tracing, centralized logs) and no container hardening (non-root users, pinned digests, read-only filesystems).
+- Frontend test coverage is limited to the API client layer; there are no end-to-end tests across the three applications.

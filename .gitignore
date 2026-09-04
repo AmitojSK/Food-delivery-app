@@ -6,3 +6,5 @@ target/
 .env
 .DS_Store
 DEPLOYMENT_HANDOFF.md
+LEARNINGS.md
+SEQUENCE_DIAGRAM.md
