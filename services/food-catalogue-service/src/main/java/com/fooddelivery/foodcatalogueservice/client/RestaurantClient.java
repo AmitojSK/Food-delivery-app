@@ -1,5 +1,6 @@
 package com.fooddelivery.foodcatalogueservice.client;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -7,8 +8,11 @@ import org.springframework.web.reactive.function.client.WebClient;
 public class RestaurantClient {
     private final WebClient client;
 
-    public RestaurantClient(WebClient.Builder builder) {
-        client = builder.baseUrl("http://RESTAURANT-SERVICE").build();
+    public RestaurantClient(
+            WebClient.Builder builder,
+            @Value("${RESTAURANT_SERVICE_URI:http://RESTAURANT-SERVICE}") String restaurantServiceUri
+    ) {
+        client = builder.baseUrl(restaurantServiceUri).build();
     }
 
     public RestaurantOwnership getRestaurant(Long restaurantId) {

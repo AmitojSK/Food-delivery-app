@@ -1,6 +1,7 @@
 package com.fooddelivery.orderservice.client;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -14,12 +15,16 @@ public class ServiceClient {
     private final WebClient restaurantClient;
     private final WebClient catalogueClient;
 
-    public ServiceClient(WebClient.Builder loadBalancedWebClientBuilder) {
+    public ServiceClient(
+            WebClient.Builder loadBalancedWebClientBuilder,
+            @Value("${RESTAURANT_SERVICE_URI:http://RESTAURANT-SERVICE}") String restaurantServiceUri,
+            @Value("${FOOD_CATALOGUE_SERVICE_URI:http://FOOD-CATALOGUE-SERVICE}") String foodCatalogueServiceUri
+    ) {
         this.restaurantClient = loadBalancedWebClientBuilder.clone()
-                .baseUrl("http://RESTAURANT-SERVICE")
+                .baseUrl(restaurantServiceUri)
                 .build();
         this.catalogueClient = loadBalancedWebClientBuilder.clone()
-                .baseUrl("http://FOOD-CATALOGUE-SERVICE")
+                .baseUrl(foodCatalogueServiceUri)
                 .build();
     }
 
