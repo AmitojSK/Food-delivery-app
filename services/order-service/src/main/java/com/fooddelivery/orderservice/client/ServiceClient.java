@@ -16,14 +16,14 @@ public class ServiceClient {
     private final WebClient catalogueClient;
 
     public ServiceClient(
-            WebClient.Builder loadBalancedWebClientBuilder,
-            @Value("${RESTAURANT_SERVICE_URI:http://RESTAURANT-SERVICE}") String restaurantServiceUri,
-            @Value("${FOOD_CATALOGUE_SERVICE_URI:http://FOOD-CATALOGUE-SERVICE}") String foodCatalogueServiceUri
+            WebClient.Builder webClientBuilder,
+            @Value("${RESTAURANT_SERVICE_URI:http://restaurant-service:8082}") String restaurantServiceUri,
+            @Value("${FOOD_CATALOGUE_SERVICE_URI:http://food-catalogue-service:8083}") String foodCatalogueServiceUri
     ) {
-        this.restaurantClient = loadBalancedWebClientBuilder.clone()
+        this.restaurantClient = webClientBuilder.clone()
                 .baseUrl(restaurantServiceUri)
                 .build();
-        this.catalogueClient = loadBalancedWebClientBuilder.clone()
+        this.catalogueClient = webClientBuilder.clone()
                 .baseUrl(foodCatalogueServiceUri)
                 .build();
     }

@@ -10,7 +10,7 @@ public class RestaurantClient {
 
     public RestaurantClient(
             WebClient.Builder builder,
-            @Value("${RESTAURANT_SERVICE_URI:http://RESTAURANT-SERVICE}") String restaurantServiceUri
+            @Value("${RESTAURANT_SERVICE_URI:http://restaurant-service:8082}") String restaurantServiceUri
     ) {
         client = builder.baseUrl(restaurantServiceUri).build();
     }
