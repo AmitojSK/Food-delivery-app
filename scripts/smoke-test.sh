@@ -78,22 +78,38 @@ echo "=== 4. [Kafka] OrderReadyForPickup should create a PENDING delivery ==="
 DRIVER_TOKEN=$(login "$DRIVER_EMAIL" "$DRIVER_PASSWORD")
 [ -n "$DRIVER_TOKEN" ] || fail "driver login failed"
 
-# Polled from the driver's perspective. Customers currently cannot read their own
-# delivery at all (delivery-service never receives the customer id, so
-# DeliverySecurity has no customer branch) - see DEPLOYMENT_HANDOFF.md.
+# Polled with the CUSTOMER's token: this simultaneously proves the delivery was created
+# via Kafka and that the ordering customer is authorized to track it.
 DELIVERY_ID=""
 for i in $(seq 1 "$POLL_ATTEMPTS"); do
   D=$($CURL "$GATEWAY_URL/delivery-api/api/v1/deliveries/order/$ORDER_ID" \
-    -H "Authorization: Bearer $DRIVER_TOKEN")
+    -H "Authorization: Bearer $CUST_TOKEN")
   DELIVERY_ID=$(num "$D" id)
   if [ -n "$DELIVERY_ID" ]; then
     pass "delivery $DELIVERY_ID created via Kafka (status $(str "$D" status)) after ~$((i * POLL_INTERVAL))s"
     pass "pickup address resolved from restaurant: $(str "$D" pickupAddress)"
+    pass "ordering customer can track their own delivery"
     break
   fi
   sleep "$POLL_INTERVAL"
 done
 [ -n "$DELIVERY_ID" ] || fail "no delivery appeared within $((POLL_ATTEMPTS * POLL_INTERVAL))s"
+
+echo "=== 4b. Cross-tenant check: another customer must NOT read this delivery ==="
+OTHER_EMAIL="smoke-other-$STAMP@fooddelivery.local"
+OTHER=$($CURL -X POST "$GATEWAY_URL/user-api/api/v1/auth/register" \
+  -H 'Content-Type: application/json' \
+  -d "{\"firstName\":\"Other\",\"lastName\":\"Customer\",\"email\":\"$OTHER_EMAIL\",\"phoneNumber\":\"+91901$(printf '%07d' $((STAMP % 10000000)))\",\"password\":\"Other-$STAMP-pw\"}")
+OTHER_TOKEN=$(str "$OTHER" accessToken)
+[ -n "$OTHER_TOKEN" ] || fail "second customer registration failed: $OTHER"
+
+OTHER_CODE=$($CURL -o /dev/null -w '%{http_code}' \
+  "$GATEWAY_URL/delivery-api/api/v1/deliveries/$DELIVERY_ID" -H "Authorization: Bearer $OTHER_TOKEN")
+case "$OTHER_CODE" in
+  403|404) pass "unrelated customer denied ($OTHER_CODE)" ;;
+  200)     fail "DATA LEAK: an unrelated customer read delivery $DELIVERY_ID" ;;
+  *)       fail "unexpected status $OTHER_CODE for cross-tenant read" ;;
+esac
 
 echo "=== 5. Delivery partner accepts and fulfils ==="
 

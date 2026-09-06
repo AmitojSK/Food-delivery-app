@@ -9,6 +9,14 @@ spring:
       uri: ${ORDER_SERVICE_MONGODB_URI:mongodb://order_service:order_service_password@[::1]:27017/order_service_db?authSource=admin&replicaSet=rs0&directConnection=true}
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    # Applies to producer, consumer and admin clients alike. Defaults keep local Docker
+    # Compose on an unauthenticated broker; deployed environments set these to
+    # SASL_PLAINTEXT/PLAIN plus a JAAS config, since the broker there is reachable
+    # over the public internet and must not accept anonymous clients.
+    properties:
+      security.protocol: ${KAFKA_SECURITY_PROTOCOL:PLAINTEXT}
+      sasl.mechanism: ${KAFKA_SASL_MECHANISM:PLAIN}
+      sasl.jaas.config: ${KAFKA_SASL_JAAS_CONFIG:}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
