@@ -26,8 +26,10 @@ DRIVER_PASSWORD="${DRIVER_PASSWORD:-$(openssl rand -base64 18 | tr -d '/+=' | he
 
 CURL="curl -sS --max-time 120"
 
-json_field() { grep -o "\"$2\":\"[^\"]*\"" <<<"$1" | head -1 | cut -d'"' -f4; }
-json_number() { grep -o "\"$2\":[0-9]*" <<<"$1" | head -1 | cut -d: -f2; }
+# `|| true` matters: under `set -e`, a grep that finds nothing would otherwise abort
+# the script inside a command substitution, before any error message can be printed.
+json_field() { grep -o "\"$2\":\"[^\"]*\"" <<<"$1" | head -1 | cut -d'"' -f4 || true; }
+json_number() { grep -o "\"$2\":[0-9]*" <<<"$1" | head -1 | cut -d: -f2 || true; }
 
 login() {
   local body
@@ -56,20 +58,34 @@ echo "==> Authenticating as restaurant owner"
 OWNER_TOKEN=$(login "$OWNER_EMAIL" "$OWNER_PASSWORD")
 [ -n "$OWNER_TOKEN" ] || { echo "owner login failed"; exit 1; }
 
-echo "==> Creating restaurant"
-RESTAURANT=$($CURL -X POST "$GATEWAY_URL/restaurant-api/api/v1/partner/restaurants" \
-  -H "Authorization: Bearer $OWNER_TOKEN" -H 'Content-Type: application/json' \
-  -d '{"name":"Spice Route","cuisineType":"North Indian","streetAddress":"12 MG Road","city":"Bengaluru","state":"Karnataka","postalCode":"560001","contactEmail":"hello@spiceroute.local","contactPhone":"+910000000010"}')
-RESTAURANT_ID=$(json_number "$RESTAURANT" id)
-[ -n "$RESTAURANT_ID" ] || { echo "restaurant creation failed: $RESTAURANT"; exit 1; }
-echo "    restaurant id = $RESTAURANT_ID"
+# Idempotent: reuse the owner's existing restaurant if the seed has run before.
+echo "==> Ensuring restaurant exists"
+EXISTING=$($CURL "$GATEWAY_URL/restaurant-api/api/v1/partner/restaurants" \
+  -H "Authorization: Bearer $OWNER_TOKEN")
+RESTAURANT_ID=$(json_number "$EXISTING" id)
+
+if [ -z "$RESTAURANT_ID" ]; then
+  RESTAURANT=$($CURL -X POST "$GATEWAY_URL/restaurant-api/api/v1/partner/restaurants" \
+    -H "Authorization: Bearer $OWNER_TOKEN" -H 'Content-Type: application/json' \
+    -d '{"name":"Spice Route","cuisineType":"North Indian","streetAddress":"12 MG Road","city":"Bengaluru","state":"Karnataka","postalCode":"560001","contactEmail":"hello@spiceroute.local","contactPhone":"+910000000010"}')
+  RESTAURANT_ID=$(json_number "$RESTAURANT" id)
+  [ -n "$RESTAURANT_ID" ] || { echo "restaurant creation failed: $RESTAURANT"; exit 1; }
+  echo "    created restaurant id = $RESTAURANT_ID"
+else
+  echo "    reusing existing restaurant id = $RESTAURANT_ID"
+fi
 
 echo "==> Adding menu items"
 add_item() {
-  $CURL -X POST "$GATEWAY_URL/catalogue-api/api/v1/partner/food-items" \
+  local response
+  response=$($CURL -X POST "$GATEWAY_URL/catalogue-api/api/v1/partner/food-items" \
     -H "Authorization: Bearer $OWNER_TOKEN" -H 'Content-Type: application/json' \
-    -d "{\"restaurantId\":$RESTAURANT_ID,\"name\":\"$1\",\"description\":\"$2\",\"category\":\"$3\",\"price\":$4}" >/dev/null
-  echo "    + $1"
+    -d "{\"restaurantId\":$RESTAURANT_ID,\"name\":\"$1\",\"description\":\"$2\",\"category\":\"$3\",\"price\":$4}")
+  if [ -n "$(json_number "$response" id)" ]; then
+    echo "    + $1"
+  else
+    echo "    ! $1 failed: $response"
+  fi
 }
 add_item "Paneer Butter Masala" "Cottage cheese in a rich tomato and cashew gravy" "Main Course" 320.00
 add_item "Dal Tadka"            "Yellow lentils tempered with cumin and garlic"      "Main Course" 240.00

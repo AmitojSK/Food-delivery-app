@@ -62,12 +62,61 @@ class DeliverySecurityTest {
         assertThat(deliverySecurity.canReadOrderDelivery("order-1", driver(42L))).isFalse();
     }
 
+    @Test
+    void theOrderingCustomerCanTrackTheirOwnDelivery() {
+        Delivery delivery = pendingDelivery();
+        delivery.setCustomerId(7L);
+        delivery.setStatus(DeliveryStatus.IN_TRANSIT);
+        delivery.setDriverId(9L);
+        when(deliveryRepository.findByOrderId("order-1")).thenReturn(Optional.of(delivery));
+        when(deliveryRepository.findById(1L)).thenReturn(Optional.of(delivery));
+
+        assertThat(deliverySecurity.canReadOrderDelivery("order-1", customer(7L))).isTrue();
+        assertThat(deliverySecurity.canReadDelivery(1L, customer(7L))).isTrue();
+    }
+
+    @Test
+    void aDifferentCustomerCannotReadSomeoneElsesDelivery() {
+        Delivery delivery = pendingDelivery();
+        delivery.setCustomerId(7L);
+        delivery.setStatus(DeliveryStatus.IN_TRANSIT);
+        when(deliveryRepository.findByOrderId("order-1")).thenReturn(Optional.of(delivery));
+
+        assertThat(deliverySecurity.canReadOrderDelivery("order-1", customer(8L))).isFalse();
+    }
+
+    @Test
+    void pendingDeliveriesAreNotExposedToOrdinaryCustomers() {
+        // Regression: the PENDING branch previously matched ANY authenticated principal,
+        // leaking pickup and delivery addresses of every unassigned delivery.
+        Delivery delivery = pendingDelivery();
+        delivery.setCustomerId(7L);
+        when(deliveryRepository.findById(1L)).thenReturn(Optional.of(delivery));
+
+        assertThat(deliverySecurity.canReadDelivery(1L, customer(8L))).isFalse();
+    }
+
+    @Test
+    void aDeliveryWithNoRecordedCustomerIsReadableByNoCustomer() {
+        Delivery delivery = pendingDelivery();
+        delivery.setStatus(DeliveryStatus.ASSIGNED);
+        delivery.setDriverId(9L);
+        when(deliveryRepository.findById(1L)).thenReturn(Optional.of(delivery));
+
+        assertThat(deliverySecurity.canReadDelivery(1L, customer(7L))).isFalse();
+    }
+
     private Delivery pendingDelivery() {
         Delivery delivery = new Delivery();
         ReflectionTestUtils.setField(delivery, "id", 1L);
         delivery.setOrderId("order-1");
         delivery.setStatus(DeliveryStatus.PENDING);
         return delivery;
+    }
+
+    private UsernamePasswordAuthenticationToken customer(Long userId) {
+        return new UsernamePasswordAuthenticationToken(userId, null,
+                List.of(new SimpleGrantedAuthority("ROLE_CUSTOMER")));
     }
 
     private UsernamePasswordAuthenticationToken admin() {

@@ -29,9 +29,13 @@ public class OrderReadyForPickupConsumer {
         if (!"OrderReadyForPickup".equals(envelope.get("eventType"))) return;
         Map<String, Object> data = (Map<String, Object>) envelope.get("data");
         try {
+            // customerId was added after the first release of this event, so events already
+            // in the topic may not carry it. Treated as absent rather than failing the batch.
+            Number customerId = (Number) data.get("customerId");
             deliveryService.createDelivery(new CreateDeliveryRequest(
                     (String) data.get("orderId"),
                     ((Number) data.get("restaurantId")).longValue(),
+                    customerId != null ? customerId.longValue() : null,
                     (String) data.get("pickupAddress"),
                     (String) data.get("deliveryAddress")));
         } catch (DeliveryValidationException duplicate) {

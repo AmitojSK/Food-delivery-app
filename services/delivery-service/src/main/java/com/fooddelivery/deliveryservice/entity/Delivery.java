@@ -26,6 +26,10 @@ public class Delivery {
     @Column(name = "restaurant_id", nullable = false)
     private Long restaurantId;
 
+    /** Customer who placed the order; used to authorize customer-side tracking. */
+    @Column(name = "customer_id")
+    private Long customerId;
+
     @Column(name = "driver_id")
     private Long driverId;
 
@@ -76,6 +80,9 @@ public class Delivery {
 
     public String getOrderId() { return orderId; }
     public void setOrderId(String orderId) { this.orderId = orderId; }
+
+    public Long getCustomerId() { return customerId; }
+    public void setCustomerId(Long customerId) { this.customerId = customerId; }
 
     public Long getRestaurantId() { return restaurantId; }
     public void setRestaurantId(Long restaurantId) { this.restaurantId = restaurantId; }

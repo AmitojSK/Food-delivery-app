@@ -52,7 +52,7 @@ class DeliveryServiceTest {
         when(deliveryRepository.findByOrderId("order-1")).thenReturn(Optional.of(delivery));
 
         assertThatThrownBy(() -> deliveryService.createDelivery(
-                new CreateDeliveryRequest("order-1", 1L, "12 MG Road", "45 Church St")))
+                new CreateDeliveryRequest("order-1", 1L, 99L, "12 MG Road", "45 Church St")))
                 .isInstanceOf(DeliveryValidationException.class);
 
         verify(deliveryRepository, never()).save(any());
@@ -64,7 +64,7 @@ class DeliveryServiceTest {
         when(deliveryRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         var response = deliveryService.createDelivery(
-                new CreateDeliveryRequest("order-1", 1L, "12 MG Road", "45 Church St"));
+                new CreateDeliveryRequest("order-1", 1L, 99L, "12 MG Road", "45 Church St"));
 
         assertThat(response.status()).isEqualTo("PENDING");
         verify(eventPublisher, never()).publish(any(), any());

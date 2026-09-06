@@ -208,7 +208,10 @@ public class OrderService {
         RestaurantResponse restaurant = serviceClient.getRestaurant(order.getRestaurantId());
         String pickupAddress = restaurant.streetAddress() + ", " + restaurant.city() + ", " + restaurant.state()
                 + " " + restaurant.postalCode();
+        // customerId lets delivery-service authorize the ordering customer for tracking without
+        // a synchronous call back into order-service. Additive, so older consumers are unaffected.
         event.setData(Map.of("orderId", order.getId(), "restaurantId", order.getRestaurantId(),
+                "customerId", order.getUserId(),
                 "pickupAddress", pickupAddress,
                 "deliveryAddress", order.getDeliveryAddress(), "contactName", order.getContactName(),
                 "contactPhone", order.getContactPhone()));

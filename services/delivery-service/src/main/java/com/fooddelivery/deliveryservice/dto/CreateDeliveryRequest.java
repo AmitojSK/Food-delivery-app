@@ -10,6 +10,12 @@ public record CreateDeliveryRequest(
         @NotNull(message = "Restaurant ID is required")
         Long restaurantId,
 
+        /**
+         * Customer who placed the order. Optional: supplied by the OrderReadyForPickup consumer,
+         * absent for deliveries created directly through the ADMIN endpoint.
+         */
+        Long customerId,
+
         @NotBlank(message = "Pickup address is required")
         String pickupAddress,
 

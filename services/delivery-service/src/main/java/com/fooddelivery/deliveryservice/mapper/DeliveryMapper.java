@@ -12,6 +12,7 @@ public class DeliveryMapper {
         Delivery delivery = new Delivery();
         delivery.setOrderId(request.orderId());
         delivery.setRestaurantId(request.restaurantId());
+        delivery.setCustomerId(request.customerId());
         delivery.setPickupAddress(request.pickupAddress().trim());
         delivery.setDeliveryAddress(request.deliveryAddress() != null ? request.deliveryAddress().trim() : "");
         return delivery;
