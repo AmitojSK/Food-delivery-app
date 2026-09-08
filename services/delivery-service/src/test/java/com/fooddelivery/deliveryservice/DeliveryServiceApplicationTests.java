@@ -122,6 +122,50 @@ class DeliveryServiceApplicationTests {
                 .andExpect(status().isUnprocessableEntity());
     }
 
+    @Test
+    void customerCanReadTheDeliveryForTheirOwnOrder() throws Exception {
+        // Regression: /api/v1/deliveries/** previously excluded CUSTOMER at the filter-chain
+        // level, so order tracking was rejected with 401 before DeliverySecurity ever ran.
+        Delivery delivery = pendingDelivery(5L);
+        delivery.setCustomerId(7L);
+        delivery.setStatus(DeliveryStatus.IN_TRANSIT);
+        delivery.setDriverId(9L);
+        when(deliveryRepository.findById(5L)).thenReturn(Optional.of(delivery));
+
+        mockMvc.perform(get("/api/v1/deliveries/5")
+                        .with(authentication(customerAuthentication(7L))))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void customerCannotReadAnotherCustomersDelivery() throws Exception {
+        Delivery delivery = pendingDelivery(5L);
+        delivery.setCustomerId(7L);
+        delivery.setStatus(DeliveryStatus.IN_TRANSIT);
+        when(deliveryRepository.findById(5L)).thenReturn(Optional.of(delivery));
+
+        mockMvc.perform(get("/api/v1/deliveries/5")
+                        .with(authentication(customerAuthentication(8L))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void customerCannotPerformDriverActions() throws Exception {
+        mockMvc.perform(get("/api/v1/deliveries/available")
+                        .with(authentication(customerAuthentication(7L))))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(post("/api/v1/deliveries/5/accept")
+                        .with(authentication(customerAuthentication(7L))))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(patch("/api/v1/deliveries/5/status")
+                        .with(authentication(customerAuthentication(7L)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"PICKED_UP\"}"))
+                .andExpect(status().isForbidden());
+    }
+
     private String createDeliveryRequest() {
         return """
                 {"orderId":"order-1","restaurantId":1,"pickupAddress":"12 MG Road","deliveryAddress":"45 Church St"}
@@ -147,6 +191,11 @@ class DeliveryServiceApplicationTests {
     private UsernamePasswordAuthenticationToken restaurantOwnerAuthentication() {
         return new UsernamePasswordAuthenticationToken(1L, null,
                 List.of(new SimpleGrantedAuthority("ROLE_RESTAURANT_OWNER")));
+    }
+
+    private UsernamePasswordAuthenticationToken customerAuthentication(Long userId) {
+        return new UsernamePasswordAuthenticationToken(userId, null,
+                List.of(new SimpleGrantedAuthority("ROLE_CUSTOMER")));
     }
 
     private UsernamePasswordAuthenticationToken adminAuthentication() {

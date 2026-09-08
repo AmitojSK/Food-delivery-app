@@ -30,7 +30,13 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                         .requestMatchers("/api/v1/deliveries/driver/**").hasAnyRole("DELIVERY_PARTNER", "ADMIN")
-                        .requestMatchers("/api/v1/deliveries/**").hasAnyRole("DELIVERY_PARTNER", "RESTAURANT_OWNER", "ADMIN")
+                        // CUSTOMER is permitted here only so order tracking can reach the
+                        // controller at all. This is a coarse gate: every endpoint underneath
+                        // carries its own @PreAuthorize, so a customer still reaches nothing
+                        // beyond the delivery attached to their own order (DeliverySecurity),
+                        // and remains barred from accept/status/location/available entirely.
+                        .requestMatchers("/api/v1/deliveries/**")
+                            .hasAnyRole("CUSTOMER", "DELIVERY_PARTNER", "RESTAURANT_OWNER", "ADMIN")
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class).build();
     }
