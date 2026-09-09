@@ -57,9 +57,9 @@ import { NotificationService } from '../../core/notification.service';
     </form>
   `,
   styles: [`
-    h2 { margin: 0 0 24px; color: #1a1a2e; }
+    h2 { margin: 0 0 24px; color: var(--ink); }
     .form {
-      background: #fff;
+      background: var(--surface);
       padding: 24px;
       border-radius: 12px;
       display: flex;
@@ -70,20 +70,20 @@ import { NotificationService } from '../../core/notification.service';
     }
     .row { display: flex; gap: 12px; }
     .row label { flex: 1; }
-    label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: #555; }
+    label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--ink-soft); }
     input {
       padding: 10px 12px;
-      border: 1px solid #ddd;
+      border: 1px solid var(--line-strong);
       border-radius: 8px;
       font-size: 14px;
       outline: none;
     }
-    input:focus { border-color: #e67e22; }
+    input:focus { border-color: var(--brand); }
     .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
     .btn-primary {
       padding: 10px 20px;
-      background: #e67e22;
-      color: #fff;
+      background: var(--brand);
+      color: var(--surface);
       border: none;
       border-radius: 8px;
       font-size: 14px;
@@ -93,14 +93,14 @@ import { NotificationService } from '../../core/notification.service';
     .btn-primary:disabled { opacity: 0.6; }
     .btn-secondary {
       padding: 10px 20px;
-      background: #f0f0f0;
-      color: #333;
+      background: var(--line);
+      color: var(--ink);
       border: none;
       border-radius: 8px;
       font-size: 14px;
       cursor: pointer;
     }
-    .error { color: #e74c3c; font-size: 13px; margin: 0; }
+    .error { color: var(--danger); font-size: 13px; margin: 0; }
   `]
 })
 export class RestaurantFormComponent {

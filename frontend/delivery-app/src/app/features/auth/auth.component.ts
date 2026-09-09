@@ -44,22 +44,22 @@ import { DeliveryApi } from '../../core/delivery-api';
     </div>
   `,
   styles: [`
-    .auth-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f0f2f5; }
-    .auth-card { background: #fff; padding: 40px; border-radius: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); width: 100%; max-width: 440px; }
-    h1 { margin: 0 0 4px; font-size: 24px; color: #1a1a2e; }
-    .subtitle { color: #666; margin: 0 0 24px; font-size: 14px; }
-    .tabs { display: flex; margin-bottom: 24px; border-bottom: 2px solid #eee; }
-    .tabs button { flex: 1; padding: 10px; border: none; background: none; cursor: pointer; font-size: 14px; color: #888; border-bottom: 2px solid transparent; margin-bottom: -2px; }
-    .tabs button.active { color: #2ecc71; border-bottom-color: #2ecc71; }
+    .auth-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--surface-sunken); }
+    .auth-card { background: var(--surface); padding: 40px; border-radius: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); width: 100%; max-width: 440px; }
+    h1 { margin: 0 0 4px; font-size: 24px; color: var(--ink); }
+    .subtitle { color: var(--ink-soft); margin: 0 0 24px; font-size: 14px; }
+    .tabs { display: flex; margin-bottom: 24px; border-bottom: 2px solid var(--line); }
+    .tabs button { flex: 1; padding: 10px; border: none; background: none; cursor: pointer; font-size: 14px; color: var(--ink-faint); border-bottom: 2px solid transparent; margin-bottom: -2px; }
+    .tabs button.active { color: var(--success); border-bottom-color: var(--success); }
     .form { display: flex; flex-direction: column; gap: 16px; }
-    label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: #555; }
-    input { padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; }
-    input:focus { border-color: #2ecc71; }
+    label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--ink-soft); }
+    input { padding: 10px 12px; border: 1px solid var(--line-strong); border-radius: 8px; font-size: 14px; outline: none; }
+    input:focus { border-color: var(--success); }
     .row { display: flex; gap: 12px; }
     .row label { flex: 1; }
-    .btn-primary { padding: 12px; background: #2ecc71; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .btn-primary { padding: 12px; background: var(--success); color: var(--surface); border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
     .btn-primary:disabled { opacity: 0.6; }
-    .error { color: #e74c3c; font-size: 13px; margin: 8px 0 0; }
+    .error { color: var(--danger); font-size: 13px; margin: 8px 0 0; }
   `]
 })
 export class AuthComponent {

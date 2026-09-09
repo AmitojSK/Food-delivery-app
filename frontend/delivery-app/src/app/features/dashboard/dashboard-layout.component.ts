@@ -28,24 +28,24 @@ import { AuthSession } from '../../core/auth-session';
   styles: [`
     .layout { min-height: 100vh; display: flex; flex-direction: column; }
     .topbar {
-      background: #1a1a2e; color: #fff; padding: 0 24px; height: 56px;
+      background: var(--ink); color: var(--surface); padding: 0 24px; height: 56px;
       display: flex; align-items: center; gap: 24px; flex-shrink: 0;
     }
     .logo { font-weight: 700; font-size: 16px; margin-right: auto; }
     .nav-links { display: flex; gap: 4px; }
     .nav-links a {
-      padding: 8px 14px; border-radius: 6px; color: #aaa; text-decoration: none;
+      padding: 8px 14px; border-radius: 6px; color: var(--ink-faint); text-decoration: none;
       font-size: 14px; transition: background 0.15s;
     }
-    .nav-links a:hover { background: rgba(255,255,255,0.08); color: #fff; }
-    .nav-links a.active { background: #2ecc71; color: #fff; }
-    .user-section { display: flex; align-items: center; gap: 10px; font-size: 13px; color: #ccc; }
+    .nav-links a:hover { background: rgba(255,255,255,0.08); color: var(--surface); }
+    .nav-links a.active { background: var(--success); color: var(--surface); }
+    .user-section { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--line-strong); }
     .btn-logout {
       padding: 6px 12px; background: rgba(255,255,255,0.08); border: none;
-      border-radius: 6px; color: #fff; cursor: pointer; font-size: 12px;
+      border-radius: 6px; color: var(--surface); cursor: pointer; font-size: 12px;
     }
     .btn-logout:hover { background: rgba(255,255,255,0.15); }
-    .content { flex: 1; padding: 24px; background: #f0f2f5; overflow-y: auto; }
+    .content { flex: 1; padding: 24px; background: var(--surface-sunken); overflow-y: auto; }
   `]
 })
 export class DashboardLayoutComponent {

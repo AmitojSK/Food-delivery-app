@@ -73,12 +73,12 @@ import { FoodItem } from '../../core/models';
   `,
   styles: [`
     .page-header { margin-bottom: 24px; }
-    .back-link { color: #888; text-decoration: none; font-size: 13px; }
-    .back-link:hover { color: #333; }
-    h2 { margin: 8px 0 0; color: #1a1a2e; }
-    h3 { margin: 0 0 12px; color: #1a1a2e; font-size: 16px; }
+    .back-link { color: var(--ink-faint); text-decoration: none; font-size: 13px; }
+    .back-link:hover { color: var(--ink); }
+    h2 { margin: 8px 0 0; color: var(--ink); }
+    h3 { margin: 0 0 12px; color: var(--ink); font-size: 16px; }
     .add-section {
-      background: #fff;
+      background: var(--surface);
       padding: 20px;
       border-radius: 12px;
       margin-bottom: 24px;
@@ -92,17 +92,17 @@ import { FoodItem } from '../../core/models';
     }
     .form-row input {
       padding: 8px 12px;
-      border: 1px solid #ddd;
+      border: 1px solid var(--line-strong);
       border-radius: 6px;
       font-size: 13px;
       outline: none;
       flex: 1;
       min-width: 120px;
     }
-    .form-row input:focus { border-color: #e67e22; }
+    .form-row input:focus { border-color: var(--brand); }
     .data-table {
       width: 100%;
-      background: #fff;
+      background: var(--surface);
       border-radius: 12px;
       border-collapse: collapse;
       overflow: hidden;
@@ -112,29 +112,29 @@ import { FoodItem } from '../../core/models';
       text-align: left;
       padding: 12px 16px;
       font-size: 12px;
-      color: #888;
-      border-bottom: 1px solid #eee;
+      color: var(--ink-faint);
+      border-bottom: 1px solid var(--line);
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
     .data-table td {
       padding: 12px 16px;
       font-size: 14px;
-      border-bottom: 1px solid #f5f5f5;
+      border-bottom: 1px solid var(--surface-sunken);
     }
-    .desc { display: block; font-size: 12px; color: #888; }
+    .desc { display: block; font-size: 12px; color: var(--ink-faint); }
     .badge {
       font-size: 11px;
       padding: 3px 8px;
       border-radius: 4px;
       font-weight: 600;
     }
-    .badge.active { background: #d4edda; color: #155724; }
-    .badge.inactive { background: #f8d7da; color: #721c24; }
+    .badge.active { background: var(--success-tint); color: var(--success); }
+    .badge.inactive { background: var(--danger-tint); color: var(--danger); }
     .btn-primary {
       padding: 8px 16px;
-      background: #e67e22;
-      color: #fff;
+      background: var(--brand);
+      color: var(--surface);
       border: none;
       border-radius: 6px;
       font-size: 13px;
@@ -145,15 +145,15 @@ import { FoodItem } from '../../core/models';
     .btn-primary:disabled { opacity: 0.6; }
     .btn-sm {
       padding: 5px 10px;
-      background: #f0f0f0;
+      background: var(--line);
       border: none;
       border-radius: 4px;
       font-size: 12px;
       cursor: pointer;
     }
-    .btn-sm:hover { background: #e0e0e0; }
-    .error { color: #e74c3c; font-size: 13px; margin: 8px 0 0; }
-    .status-text { color: #888; }
+    .btn-sm:hover { background: var(--line); }
+    .error { color: var(--danger); font-size: 13px; margin: 8px 0 0; }
+    .status-text { color: var(--ink-faint); }
   `]
 })
 export class MenuManagementComponent implements OnInit {

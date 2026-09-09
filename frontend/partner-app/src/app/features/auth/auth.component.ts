@@ -65,23 +65,23 @@ import { PartnerApi } from '../../core/partner-api';
       display: flex;
       align-items: center;
       justify-content: center;
-      background: #f8f6f3;
+      background: var(--surface-sunken);
     }
     .auth-card {
-      background: #fff;
+      background: var(--surface);
       padding: 40px;
       border-radius: 16px;
       box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
       width: 100%;
       max-width: 440px;
     }
-    h1 { margin: 0 0 4px; font-size: 24px; color: #1a1a2e; }
-    .subtitle { color: #666; margin: 0 0 24px; font-size: 14px; }
+    h1 { margin: 0 0 4px; font-size: 24px; color: var(--ink); }
+    .subtitle { color: var(--ink-soft); margin: 0 0 24px; font-size: 14px; }
     .tabs {
       display: flex;
       gap: 0;
       margin-bottom: 24px;
-      border-bottom: 2px solid #eee;
+      border-bottom: 2px solid var(--line);
     }
     .tabs button {
       flex: 1;
@@ -90,27 +90,27 @@ import { PartnerApi } from '../../core/partner-api';
       background: none;
       cursor: pointer;
       font-size: 14px;
-      color: #888;
+      color: var(--ink-faint);
       border-bottom: 2px solid transparent;
       margin-bottom: -2px;
     }
-    .tabs button.active { color: #e67e22; border-bottom-color: #e67e22; }
+    .tabs button.active { color: var(--brand); border-bottom-color: var(--brand); }
     .form { display: flex; flex-direction: column; gap: 16px; }
-    label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: #555; }
+    label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--ink-soft); }
     input {
       padding: 10px 12px;
-      border: 1px solid #ddd;
+      border: 1px solid var(--line-strong);
       border-radius: 8px;
       font-size: 14px;
       outline: none;
     }
-    input:focus { border-color: #e67e22; }
+    input:focus { border-color: var(--brand); }
     .row { display: flex; gap: 12px; }
     .row label { flex: 1; }
     .btn-primary {
       padding: 12px;
-      background: #e67e22;
-      color: #fff;
+      background: var(--brand);
+      color: var(--surface);
       border: none;
       border-radius: 8px;
       font-size: 14px;
@@ -118,7 +118,7 @@ import { PartnerApi } from '../../core/partner-api';
       cursor: pointer;
     }
     .btn-primary:disabled { opacity: 0.6; }
-    .error { color: #e74c3c; font-size: 13px; margin: 8px 0 0; }
+    .error { color: var(--danger); font-size: 13px; margin: 8px 0 0; }
   `]
 })
 export class AuthComponent {

@@ -68,28 +68,28 @@ import { Order, OrderStatus } from '../../core/models';
   `,
   styles: [`
     .page-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
-    .back-link { color: #888; text-decoration: none; font-size: 13px; }
-    .back-link:hover { color: #333; }
-    h2 { margin: 8px 0 0; color: #1a1a2e; }
+    .back-link { color: var(--ink-faint); text-decoration: none; font-size: 13px; }
+    .back-link:hover { color: var(--ink); }
+    h2 { margin: 8px 0 0; color: var(--ink); }
     .filters { display: flex; gap: 6px; flex-wrap: wrap; }
     .filter-btn {
       padding: 6px 12px;
-      background: #fff;
-      border: 1px solid #ddd;
+      background: var(--surface);
+      border: 1px solid var(--line-strong);
       border-radius: 6px;
       font-size: 12px;
       cursor: pointer;
     }
-    .filter-btn.active { background: #e67e22; color: #fff; border-color: #e67e22; }
+    .filter-btn.active { background: var(--brand); color: var(--surface); border-color: var(--brand); }
     .order-list { display: flex; flex-direction: column; gap: 12px; }
     .order-card {
-      background: #fff;
+      background: var(--surface);
       border-radius: 12px;
       padding: 16px 20px;
       box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
     }
     .order-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-    .order-id { font-weight: 600; color: #1a1a2e; }
+    .order-id { font-weight: 600; color: var(--ink); }
     .order-status {
       font-size: 11px;
       padding: 3px 8px;
@@ -97,17 +97,17 @@ import { Order, OrderStatus } from '../../core/models';
       font-weight: 600;
       text-transform: uppercase;
     }
-    [data-status="CREATED"] { background: #fff3cd; color: #856404; }
-    [data-status="CONFIRMED"] { background: #cce5ff; color: #004085; }
-    [data-status="PREPARING"] { background: #e2d5f1; color: #5a2d82; }
-    [data-status="READY_FOR_PICKUP"] { background: #d4edda; color: #155724; }
-    [data-status="OUT_FOR_DELIVERY"] { background: #d4edda; color: #155724; }
-    [data-status="DELIVERED"] { background: #d1ecf1; color: #0c5460; }
-    [data-status="CANCELLED"] { background: #f8d7da; color: #721c24; }
-    .order-items { display: flex; gap: 12px; flex-wrap: wrap; font-size: 13px; color: #555; margin-bottom: 12px; }
+    [data-status="CREATED"] { background: var(--warning-tint); color: var(--warning); }
+    [data-status="CONFIRMED"] { background: var(--info-tint); color: var(--info); }
+    [data-status="PREPARING"] { background: var(--brand-tint); color: var(--brand-strong); }
+    [data-status="READY_FOR_PICKUP"] { background: var(--success-tint); color: var(--success); }
+    [data-status="OUT_FOR_DELIVERY"] { background: var(--success-tint); color: var(--success); }
+    [data-status="DELIVERED"] { background: var(--info-tint); color: var(--info); }
+    [data-status="CANCELLED"] { background: var(--danger-tint); color: var(--danger); }
+    .order-items { display: flex; gap: 12px; flex-wrap: wrap; font-size: 13px; color: var(--ink-soft); margin-bottom: 12px; }
     .order-footer { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-    .order-total { font-weight: 600; color: #1a1a2e; }
-    .order-time { font-size: 12px; color: #aaa; }
+    .order-total { font-weight: 600; color: var(--ink); }
+    .order-time { font-size: 12px; color: var(--ink-faint); }
     .order-actions { margin-left: auto; display: flex; gap: 6px; }
     .btn-action {
       padding: 6px 12px;
@@ -116,13 +116,13 @@ import { Order, OrderStatus } from '../../core/models';
       font-size: 12px;
       font-weight: 600;
       cursor: pointer;
-      background: #e67e22;
-      color: #fff;
+      background: var(--brand);
+      color: var(--surface);
     }
-    .btn-action.confirm { background: #27ae60; }
-    .btn-action.cancel { background: #e74c3c; }
+    .btn-action.confirm { background: var(--success); }
+    .btn-action.cancel { background: var(--danger); }
     .btn-action:hover { opacity: 0.9; }
-    .status-text { color: #888; }
+    .status-text { color: var(--ink-faint); }
   `]
 })
 export class OrderManagementComponent implements OnInit {

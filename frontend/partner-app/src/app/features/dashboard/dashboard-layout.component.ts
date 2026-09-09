@@ -36,8 +36,8 @@ import { Router } from '@angular/router';
     .layout { display: flex; min-height: 100vh; }
     .sidebar {
       width: 240px;
-      background: #1a1a2e;
-      color: #fff;
+      background: var(--ink);
+      color: var(--surface);
       padding: 24px 16px;
       display: flex;
       flex-direction: column;
@@ -56,13 +56,13 @@ import { Router } from '@angular/router';
     .nav-links a {
       padding: 10px 12px;
       border-radius: 8px;
-      color: #aaa;
+      color: var(--ink-faint);
       text-decoration: none;
       font-size: 14px;
       transition: background 0.15s;
     }
-    .nav-links a:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
-    .nav-links a.active { background: #e67e22; color: #fff; }
+    .nav-links a:hover { background: rgba(255, 255, 255, 0.08); color: var(--surface); }
+    .nav-links a.active { background: var(--brand); color: var(--surface); }
     .user-section {
       border-top: 1px solid rgba(255, 255, 255, 0.1);
       padding-top: 16px;
@@ -70,13 +70,13 @@ import { Router } from '@angular/router';
       flex-direction: column;
       gap: 8px;
     }
-    .user-name { font-size: 13px; color: #ccc; }
+    .user-name { font-size: 13px; color: var(--line-strong); }
     .btn-logout {
       padding: 8px;
       background: rgba(255, 255, 255, 0.08);
       border: none;
       border-radius: 6px;
-      color: #fff;
+      color: var(--surface);
       cursor: pointer;
       font-size: 13px;
     }
@@ -84,7 +84,7 @@ import { Router } from '@angular/router';
     .content {
       flex: 1;
       padding: 32px;
-      background: #f8f6f3;
+      background: var(--surface-sunken);
       overflow-y: auto;
     }
   `]

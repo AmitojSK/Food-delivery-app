@@ -57,31 +57,31 @@ import { Delivery, DeliveryStatus } from '../../core/models';
     }
   `,
   styles: [`
-    h2 { margin: 0 0 20px; color: #1a1a2e; }
+    h2 { margin: 0 0 20px; color: var(--ink); }
     .list { display: flex; flex-direction: column; gap: 12px; }
     .delivery-card {
-      background: #fff; border-radius: 12px; padding: 16px 20px;
+      background: var(--surface); border-radius: 12px; padding: 16px 20px;
       box-shadow: 0 1px 4px rgba(0,0,0,0.04);
     }
     .card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-    .order-id { font-weight: 600; color: #1a1a2e; }
+    .order-id { font-weight: 600; color: var(--ink); }
     .badge { font-size: 11px; padding: 3px 8px; border-radius: 4px; font-weight: 600; text-transform: uppercase; }
-    [data-status="ASSIGNED"] { background: #cce5ff; color: #004085; }
-    [data-status="PICKED_UP"] { background: #e2d5f1; color: #5a2d82; }
-    [data-status="IN_TRANSIT"] { background: #fff3cd; color: #856404; }
+    [data-status="ASSIGNED"] { background: var(--info-tint); color: var(--info); }
+    [data-status="PICKED_UP"] { background: var(--brand-tint); color: var(--brand-strong); }
+    [data-status="IN_TRANSIT"] { background: var(--warning-tint); color: var(--warning); }
     .card-body { margin-bottom: 12px; }
     .info-row { display: flex; gap: 8px; font-size: 13px; margin-bottom: 4px; }
-    .label { color: #888; min-width: 70px; }
+    .label { color: var(--ink-faint); min-width: 70px; }
     .actions { display: flex; gap: 8px; }
     .btn-action {
-      flex: 1; padding: 10px; background: #3498db; color: #fff; border: none;
+      flex: 1; padding: 10px; background: var(--info); color: var(--surface); border: none;
       border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;
     }
-    .btn-action.delivered { background: #2ecc71; }
+    .btn-action.delivered { background: var(--success); }
     .btn-action:hover { opacity: 0.9; }
-    .empty-state { text-align: center; padding: 60px 20px; color: #888; }
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--ink-faint); }
     .hint { font-size: 13px; margin-top: 4px; }
-    .status-text { color: #888; }
+    .status-text { color: var(--ink-faint); }
   `]
 })
 export class ActiveDeliveryComponent implements OnInit {

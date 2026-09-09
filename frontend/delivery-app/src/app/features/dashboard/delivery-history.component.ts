@@ -46,21 +46,21 @@ import { Delivery } from '../../core/models';
     }
   `,
   styles: [`
-    h2 { margin: 0 0 20px; color: #1a1a2e; }
+    h2 { margin: 0 0 20px; color: var(--ink); }
     .list { display: flex; flex-direction: column; gap: 10px; }
     .history-card {
-      background: #fff; border-radius: 12px; padding: 14px 18px;
+      background: var(--surface); border-radius: 12px; padding: 14px 18px;
       box-shadow: 0 1px 4px rgba(0,0,0,0.04);
     }
     .card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-    .order-id { font-weight: 600; color: #1a1a2e; font-size: 14px; }
+    .order-id { font-weight: 600; color: var(--ink); font-size: 14px; }
     .badge { font-size: 11px; padding: 3px 8px; border-radius: 4px; font-weight: 600; text-transform: uppercase; }
-    [data-status="DELIVERED"] { background: #d4edda; color: #155724; }
-    [data-status="CANCELLED"] { background: #f8d7da; color: #721c24; }
+    [data-status="DELIVERED"] { background: var(--success-tint); color: var(--success); }
+    [data-status="CANCELLED"] { background: var(--danger-tint); color: var(--danger); }
     .card-body { font-size: 13px; }
     .info-row { display: flex; gap: 8px; margin-bottom: 3px; }
-    .label { color: #888; min-width: 80px; }
-    .status-text { color: #888; }
+    .label { color: var(--ink-faint); min-width: 80px; }
+    .status-text { color: var(--ink-faint); }
   `]
 })
 export class DeliveryHistoryComponent implements OnInit {

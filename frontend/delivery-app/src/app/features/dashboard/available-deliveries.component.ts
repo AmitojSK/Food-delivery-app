@@ -50,28 +50,28 @@ import { Delivery } from '../../core/models';
   `,
   styles: [`
     .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    h2 { margin: 0; color: #1a1a2e; }
-    .btn-refresh { padding: 8px 14px; background: #fff; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; font-size: 13px; }
+    h2 { margin: 0; color: var(--ink); }
+    .btn-refresh { padding: 8px 14px; background: var(--surface); border: 1px solid var(--line-strong); border-radius: 6px; cursor: pointer; font-size: 13px; }
     .list { display: flex; flex-direction: column; gap: 12px; }
     .delivery-card {
-      background: #fff; border-radius: 12px; padding: 16px 20px;
+      background: var(--surface); border-radius: 12px; padding: 16px 20px;
       box-shadow: 0 1px 4px rgba(0,0,0,0.04);
     }
     .card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-    .order-id { font-weight: 600; color: #1a1a2e; }
+    .order-id { font-weight: 600; color: var(--ink); }
     .badge { font-size: 11px; padding: 3px 8px; border-radius: 4px; font-weight: 600; }
-    .badge.pending { background: #fff3cd; color: #856404; }
+    .badge.pending { background: var(--warning-tint); color: var(--warning); }
     .card-body { margin-bottom: 12px; }
     .info-row { display: flex; gap: 8px; font-size: 13px; margin-bottom: 4px; }
-    .label { color: #888; min-width: 70px; }
+    .label { color: var(--ink-faint); min-width: 70px; }
     .btn-accept {
-      width: 100%; padding: 10px; background: #2ecc71; color: #fff; border: none;
+      width: 100%; padding: 10px; background: var(--success); color: var(--surface); border: none;
       border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;
     }
-    .btn-accept:hover { background: #27ae60; }
-    .empty-state { text-align: center; padding: 60px 20px; color: #888; }
+    .btn-accept:hover { background: var(--success); }
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--ink-faint); }
     .hint { font-size: 13px; margin-top: 4px; }
-    .status-text { color: #888; }
+    .status-text { color: var(--ink-faint); }
   `]
 })
 export class AvailableDeliveriesComponent implements OnInit {

@@ -7,8 +7,7 @@ import { CartService } from './core/cart.service';
 @Component({
   selector: 'app-root',
   imports: [RouterOutlet, RouterLink],
-  templateUrl: './app.html',
-  styleUrl: './app.scss'
+  templateUrl: './app.html'
 })
 export class App {
   protected readonly auth = inject(AuthSession);

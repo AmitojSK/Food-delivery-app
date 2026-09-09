@@ -43,31 +43,31 @@ import { Restaurant } from '../../core/models';
   `,
   styles: [`
     .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-    h2 { margin: 0; color: #1a1a2e; }
+    h2 { margin: 0; color: var(--ink); }
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
     .card {
-      background: #fff;
+      background: var(--surface);
       border-radius: 12px;
       padding: 20px;
       box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
     }
     .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-    .card-header h3 { margin: 0; font-size: 16px; color: #1a1a2e; }
+    .card-header h3 { margin: 0; font-size: 16px; color: var(--ink); }
     .badge {
       font-size: 11px;
       padding: 3px 8px;
       border-radius: 4px;
       font-weight: 600;
     }
-    .badge.active { background: #d4edda; color: #155724; }
-    .badge.inactive { background: #f8d7da; color: #721c24; }
-    .cuisine { color: #e67e22; font-size: 13px; margin: 0 0 4px; }
-    .address { color: #888; font-size: 13px; margin: 0 0 16px; }
+    .badge.active { background: var(--success-tint); color: var(--success); }
+    .badge.inactive { background: var(--danger-tint); color: var(--danger); }
+    .cuisine { color: var(--brand); font-size: 13px; margin: 0 0 4px; }
+    .address { color: var(--ink-faint); font-size: 13px; margin: 0 0 16px; }
     .card-actions { display: flex; gap: 8px; }
     .btn-primary {
       padding: 10px 16px;
-      background: #e67e22;
-      color: #fff;
+      background: var(--brand);
+      color: var(--surface);
       border: none;
       border-radius: 8px;
       text-decoration: none;
@@ -76,22 +76,22 @@ import { Restaurant } from '../../core/models';
     }
     .btn-secondary {
       padding: 8px 14px;
-      background: #f0f0f0;
-      color: #333;
+      background: var(--line);
+      color: var(--ink);
       border: none;
       border-radius: 6px;
       text-decoration: none;
       font-size: 13px;
       cursor: pointer;
     }
-    .btn-secondary:hover { background: #e0e0e0; }
+    .btn-secondary:hover { background: var(--line); }
     .empty-state {
       text-align: center;
       padding: 60px 20px;
-      color: #888;
+      color: var(--ink-faint);
     }
     .empty-state .btn-primary { display: inline-block; margin-top: 12px; }
-    .status-text { color: #888; }
+    .status-text { color: var(--ink-faint); }
   `]
 })
 export class RestaurantListComponent implements OnInit {
