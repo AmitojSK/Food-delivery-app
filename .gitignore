@@ -5,6 +5,7 @@ target/
 *.log
 .env
 .DS_Store
+demo-credentials.txt
 DEPLOYMENT_HANDOFF.md
 LEARNINGS.md
 SEQUENCE_DIAGRAM.md
