@@ -6,13 +6,13 @@
     </div>
     @if (auth.isAuthenticated()) {
       <div class="account-actions">
-        <span class="user-badge">{{ auth.user()?.firstName }} · {{ auth.user()?.role }}</span>
-        <nav class="mode-switch" aria-label="Workflow">
-          <a routerLink="/restaurants"><button type="button" [class.active]="!isAdminRoute()">Consumer</button></a>
-          @if (auth.isAdmin()) {
+        <span class="user-badge">{{ auth.user()?.firstName }}</span>
+        @if (auth.isAdmin()) {
+          <nav class="mode-switch" aria-label="Workflow">
+            <a routerLink="/restaurants"><button type="button" [class.active]="!isAdminRoute()">Shop</button></a>
             <a routerLink="/admin"><button type="button" [class.active]="isAdminRoute()">Admin</button></a>
-          }
-        </nav>
+          </nav>
+        }
         <button class="secondary" type="button" (click)="logout()">Sign out</button>
       </div>
     }

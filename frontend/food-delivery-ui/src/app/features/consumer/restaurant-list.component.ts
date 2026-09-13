@@ -2,6 +2,8 @@ import { Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { DataStore } from '../../core/data-store.service';
 import { NotificationService } from '../../core/notification.service';
+import { Restaurant } from '../../core/models';
+import { restaurantImageUrl, swapToFallback } from '../../core/food-images';
 
 @Component({
   selector: 'app-restaurant-list',
@@ -18,9 +20,8 @@ import { NotificationService } from '../../core/notification.service';
       <div class="restaurant-grid">
         @for (restaurant of store.restaurants(); track restaurant.id) {
           <article class="restaurant-card">
-            <div class="restaurant-art">
-              <span>{{ restaurant.name.charAt(0) }}</span>
-            </div>
+            <img class="card-photo" [src]="imageFor(restaurant)" [alt]="restaurant.name"
+                 loading="lazy" (error)="onImgError($event, restaurant.name)" />
             <div>
               <h3>{{ restaurant.name }}</h3>
               <p>{{ restaurant.cuisineType }}</p>
@@ -43,4 +44,12 @@ import { NotificationService } from '../../core/notification.service';
 export class RestaurantListComponent {
   protected readonly store = inject(DataStore);
   protected readonly notifications = inject(NotificationService);
+
+  protected imageFor(restaurant: Restaurant): string {
+    return restaurantImageUrl(restaurant, this.store.foodItems());
+  }
+
+  protected onImgError(event: Event, label: string): void {
+    swapToFallback(event, label);
+  }
 }

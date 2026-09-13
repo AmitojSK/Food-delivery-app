@@ -4,6 +4,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { CartService } from '../../core/cart.service';
 import { DataStore } from '../../core/data-store.service';
 import { FoodItem } from '../../core/models';
+import { foodImageUrl, swapToFallback } from '../../core/food-images';
 
 @Component({
   selector: 'app-menu',
@@ -22,6 +23,8 @@ import { FoodItem } from '../../core/models';
       <div class="menu-grid">
         @for (item of menuItems(); track item.id) {
           <article class="menu-item">
+            <img class="card-photo" [src]="imageFor(item)" [alt]="item.name"
+                 loading="lazy" (error)="onImgError($event, item.name)" />
             <div>
               <p class="category">{{ item.category }}</p>
               <h3>{{ item.name }}</h3>
@@ -59,6 +62,14 @@ export class MenuComponent implements OnInit {
 
   ngOnInit(): void {
     this.restaurantId = Number(this.route.snapshot.paramMap.get('id'));
+  }
+
+  protected imageFor(item: FoodItem): string {
+    return foodImageUrl(item);
+  }
+
+  protected onImgError(event: Event, label: string): void {
+    swapToFallback(event, label);
   }
 
   protected addToCart(item: FoodItem): void {
