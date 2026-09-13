@@ -4,12 +4,14 @@ import { DataStore } from '../../core/data-store.service';
 import { NotificationService } from '../../core/notification.service';
 import { Restaurant } from '../../core/models';
 import { restaurantImageUrl, swapToFallback } from '../../core/food-images';
+import { RoleNudgeComponent } from './role-nudge.component';
 
 @Component({
   selector: 'app-restaurant-list',
-  imports: [RouterLink],
+  imports: [RouterLink, RoleNudgeComponent],
   template: `
     <section class="browse">
+      <app-role-nudge />
       <div class="section-heading">
         <div>
           <p class="eyebrow">Restaurants</p>

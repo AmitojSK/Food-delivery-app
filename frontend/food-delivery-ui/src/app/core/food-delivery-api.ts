@@ -43,6 +43,13 @@ export class FoodDeliveryApi {
     return this.http.get<Restaurant[]>('/restaurant-api/api/v1/restaurants').pipe(catchError(handleApiError));
   }
 
+  // Owner-scoped: the restaurants belonging to the authenticated RESTAURANT_OWNER.
+  listMyRestaurants(): Observable<Restaurant[]> {
+    return this.http
+      .get<Restaurant[]>('/restaurant-api/api/v1/partner/restaurants')
+      .pipe(catchError(handleApiError));
+  }
+
   createRestaurant(request: CreateRestaurantRequest): Observable<Restaurant> {
     return this.http
       .post<Restaurant>('/restaurant-api/api/v1/restaurants', request)
