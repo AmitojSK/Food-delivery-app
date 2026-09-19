@@ -1,4 +1,4 @@
-package com.fooddelivery.notificationservice.security;
+package com.fooddelivery.realtimeservice.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

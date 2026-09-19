@@ -1,4 +1,4 @@
-package com.fooddelivery.notificationservice.sse;
+package com.fooddelivery.realtimeservice.sse;
 
 import java.io.IOException;
 import java.util.List;

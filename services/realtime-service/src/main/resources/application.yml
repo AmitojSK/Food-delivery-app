@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: notification-service
+    name: realtime-service
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     # Same broker-auth surface as the other services: local Compose runs against an
@@ -13,8 +13,8 @@ spring:
       sasl.mechanism: ${KAFKA_SASL_MECHANISM:PLAIN}
       sasl.jaas.config: ${KAFKA_SASL_JAAS_CONFIG:}
     consumer:
-      group-id: notification-service-v1
-      # Notifications are live-only: start at the tail rather than replaying the
+      group-id: realtime-service-v1
+      # Live-only: start at the tail rather than replaying the
       # whole topic's history to every freshly connected client.
       auto-offset-reset: latest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer

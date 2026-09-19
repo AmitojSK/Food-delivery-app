@@ -7,7 +7,7 @@ import { CartService } from '../../core/cart.service';
 import { DataStore } from '../../core/data-store.service';
 import { FoodDeliveryApi } from '../../core/food-delivery-api';
 import { NotificationService } from '../../core/notification.service';
-import { NotificationStream } from '../../core/notification-stream.service';
+import { RealtimeStream } from '../../core/realtime-stream.service';
 import { CreateOrderRequest, Order } from '../../core/models';
 
 @Component({
@@ -80,7 +80,7 @@ export class ConsumerLayoutComponent implements OnInit, OnDestroy {
   protected readonly store = inject(DataStore);
   protected readonly notifications = inject(NotificationService);
   private readonly api = inject(FoodDeliveryApi);
-  private readonly stream = inject(NotificationStream);
+  private readonly stream = inject(RealtimeStream);
 
   protected readonly placedOrder = signal<Order | null>(null);
   protected readonly deliveryAddress = signal('');

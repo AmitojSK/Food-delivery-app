@@ -1,4 +1,4 @@
-package com.fooddelivery.notificationservice.security;
+package com.fooddelivery.realtimeservice.security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;

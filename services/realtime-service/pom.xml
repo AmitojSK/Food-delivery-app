@@ -12,10 +12,10 @@
     </parent>
 
     <groupId>com.fooddelivery</groupId>
-    <artifactId>notification-service</artifactId>
+    <artifactId>realtime-service</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>notification-service</name>
-    <description>Real-time notification fan-out (SSE) for the food delivery platform</description>
+    <name>realtime-service</name>
+    <description>Real-time event fan-out (SSE) for the food delivery platform</description>
 
     <properties>
         <java.version>21</java.version>

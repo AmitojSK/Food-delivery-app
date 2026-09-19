@@ -1,6 +1,6 @@
-package com.fooddelivery.notificationservice.event;
+package com.fooddelivery.realtimeservice.event;
 
-import com.fooddelivery.notificationservice.sse.SseHub;
+import com.fooddelivery.realtimeservice.sse.SseHub;
 import java.util.Map;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;

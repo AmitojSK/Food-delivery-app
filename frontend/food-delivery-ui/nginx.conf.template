@@ -25,8 +25,8 @@ server {
 
     # Server-Sent Events stream for live order updates: disable proxy buffering and
     # keep the upstream connection open so events reach the browser as they happen.
-    location /notification-api/ {
-        proxy_pass ${API_GATEWAY_URL}/notification-api/;
+    location /realtime-api/ {
+        proxy_pass ${API_GATEWAY_URL}/realtime-api/;
         proxy_http_version 1.1;
         proxy_set_header Connection "";
         proxy_buffering off;

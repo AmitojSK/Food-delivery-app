@@ -280,9 +280,9 @@ services:
       timeout: 5s
       retries: 10
 
-  notification-service:
-    build: services/notification-service
-    container_name: notification-service
+  realtime-service:
+    build: services/realtime-service
+    container_name: realtime-service
     depends_on:
       discovery-server:
         condition: service_healthy
@@ -318,7 +318,7 @@ services:
         condition: service_healthy
       delivery-service:
         condition: service_healthy
-      notification-service:
+      realtime-service:
         condition: service_healthy
     environment:
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-server:8761/eureka/

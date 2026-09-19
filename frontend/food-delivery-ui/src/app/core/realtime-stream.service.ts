@@ -2,14 +2,14 @@ import { Injectable, inject, signal } from '@angular/core';
 import { AuthSession } from './auth-session';
 
 /**
- * Live order-status stream from the notification-service, over Server-Sent Events.
+ * Live order-status stream from the realtime-service, over Server-Sent Events.
  *
  * We consume the stream with `fetch` rather than the native `EventSource` because
  * EventSource cannot send an Authorization header, and we will not put the JWT in
  * the URL. The connection reconnects with capped backoff while a session is active.
  */
 @Injectable({ providedIn: 'root' })
-export class NotificationStream {
+export class RealtimeStream {
   private readonly auth = inject(AuthSession);
   private controller: AbortController | null = null;
   private running = false;
@@ -40,7 +40,7 @@ export class NotificationStream {
     while (this.running) {
       this.controller = new AbortController();
       try {
-        const response = await fetch('/notification-api/api/v1/notifications/stream', {
+        const response = await fetch('/realtime-api/api/v1/stream', {
           headers: { Authorization: `Bearer ${token}`, Accept: 'text/event-stream' },
           signal: this.controller.signal
         });
