@@ -28,6 +28,7 @@ jobs:
           - food-catalogue-service
           - order-service
           - delivery-service
+          - notification-service
           - api-gateway
     defaults:
       run:
@@ -116,7 +117,7 @@ jobs:
       - name: Scan built images for HIGH/CRITICAL vulnerabilities
         run: |
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
-          images="fooddelivery-discovery-server fooddelivery-api-gateway fooddelivery-user-service fooddelivery-restaurant-service fooddelivery-food-catalogue-service fooddelivery-order-service fooddelivery-delivery-service fooddelivery-frontend fooddelivery-partner-app fooddelivery-delivery-app"
+          images="fooddelivery-discovery-server fooddelivery-api-gateway fooddelivery-user-service fooddelivery-restaurant-service fooddelivery-food-catalogue-service fooddelivery-order-service fooddelivery-delivery-service fooddelivery-notification-service fooddelivery-frontend fooddelivery-partner-app fooddelivery-delivery-app"
           for image in $images; do
             echo "::group::Trivy scan: $image"
             trivy image --severity HIGH,CRITICAL --exit-code 0 "$image"
@@ -134,7 +135,7 @@ jobs:
         run: |
           owner=$(printf '%s' "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           branch=$(printf '%s' "${{ github.ref_name }}" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9._-' '-')
-          images="fooddelivery-discovery-server fooddelivery-api-gateway fooddelivery-user-service fooddelivery-restaurant-service fooddelivery-food-catalogue-service fooddelivery-order-service fooddelivery-delivery-service fooddelivery-frontend fooddelivery-partner-app fooddelivery-delivery-app"
+          images="fooddelivery-discovery-server fooddelivery-api-gateway fooddelivery-user-service fooddelivery-restaurant-service fooddelivery-food-catalogue-service fooddelivery-order-service fooddelivery-delivery-service fooddelivery-notification-service fooddelivery-frontend fooddelivery-partner-app fooddelivery-delivery-app"
 
           # GHCR occasionally returns a transient "unknown blob" error mid-upload
           # (seen pushing food-delivery-app-frontend); retry a few times before

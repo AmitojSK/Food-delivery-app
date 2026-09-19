@@ -50,7 +50,9 @@ public class OrderService {
         validateFoodItems(request.restaurantId(), request.items());
 
         Order order = orderMapper.toEntity(request, DEFAULT_DELIVERY_FEE);
-        return orderMapper.toResponse(orderRepository.save(order));
+        Order saved = orderRepository.save(order);
+        addStatusChangedEvent(saved);
+        return orderMapper.toResponse(saved);
     }
 
     public OrderResponse getOrder(String id) {
@@ -81,6 +83,7 @@ public class OrderService {
         order.setStatus(request.status());
         Order saved = orderRepository.save(order);
         addReadyForPickupEvent(saved);
+        addStatusChangedEvent(saved);
         return orderMapper.toResponse(saved);
     }
 
@@ -107,6 +110,7 @@ public class OrderService {
         order.setStatus(request.status());
         Order saved = orderRepository.save(order);
         addReadyForPickupEvent(saved);
+        addStatusChangedEvent(saved);
         return orderMapper.toResponse(saved);
     }
 
@@ -121,7 +125,8 @@ public class OrderService {
         if (order.getStatus() == target) return;
         validateStatusTransition(order.getStatus(), target);
         order.setStatus(target);
-        orderRepository.save(order);
+        Order saved = orderRepository.save(order);
+        addStatusChangedEvent(saved);
     }
 
     private Order findOrder(String id) {
@@ -215,6 +220,25 @@ public class OrderService {
                 "pickupAddress", pickupAddress,
                 "deliveryAddress", order.getDeliveryAddress(), "contactName", order.getContactName(),
                 "contactPhone", order.getContactPhone()));
+        outboxRepository.save(event);
+    }
+
+    // Emitted on every status transition so the notification-service can push live
+    // order-status updates to the ordering customer. Carries userId so the fan-out
+    // is per-customer. Written to the same outbox in the same transaction as the
+    // status change, so it inherits the outbox's exactly-once-to-Kafka guarantees.
+    private void addStatusChangedEvent(Order order) {
+        String eventId = UUID.randomUUID().toString();
+        OrderOutboxEvent event = new OrderOutboxEvent();
+        event.setId(eventId);
+        event.setEventType("OrderStatusChanged");
+        event.setEventVersion(1);
+        event.setAggregateId(order.getId());
+        event.setCorrelationId(order.getId());
+        event.setCausationId(eventId);
+        event.setOccurredAt(Instant.now());
+        event.setData(Map.of("orderId", order.getId(), "userId", order.getUserId(),
+                "restaurantId", order.getRestaurantId(), "status", order.getStatus().name()));
         outboxRepository.save(event);
     }
 }

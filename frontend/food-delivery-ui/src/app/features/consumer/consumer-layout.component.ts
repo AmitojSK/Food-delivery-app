@@ -1,4 +1,4 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { finalize } from 'rxjs';
@@ -7,6 +7,7 @@ import { CartService } from '../../core/cart.service';
 import { DataStore } from '../../core/data-store.service';
 import { FoodDeliveryApi } from '../../core/food-delivery-api';
 import { NotificationService } from '../../core/notification.service';
+import { NotificationStream } from '../../core/notification-stream.service';
 import { CreateOrderRequest, Order } from '../../core/models';
 
 @Component({
@@ -58,28 +59,55 @@ import { CreateOrderRequest, Order } from '../../core/models';
           <button type="submit" [disabled]="notifications.saving() || cart.items().length === 0">Place Order</button>
         </form>
 
-        @if (placedOrder()) {
+        @if (placedOrder(); as order) {
           <div class="confirmation">
-            <p class="eyebrow">Order confirmed</p>
-            <strong>#{{ placedOrder()?.id }}</strong>
-            <span>{{ placedOrder()?.totalAmount | currency: 'INR' }}</span>
+            <p class="eyebrow">Order placed</p>
+            <strong>#{{ order.id }}</strong>
+            <span>{{ order.totalAmount | currency: 'INR' }}</span>
+            <div class="live-status">
+              <span class="live-dot" aria-hidden="true"></span>
+              <span>{{ statusLabel(liveStatus()) }}</span>
+            </div>
           </div>
         }
       </aside>
     </section>
   `
 })
-export class ConsumerLayoutComponent implements OnInit {
+export class ConsumerLayoutComponent implements OnInit, OnDestroy {
   protected readonly auth = inject(AuthSession);
   protected readonly cart = inject(CartService);
   protected readonly store = inject(DataStore);
   protected readonly notifications = inject(NotificationService);
   private readonly api = inject(FoodDeliveryApi);
+  private readonly stream = inject(NotificationStream);
 
   protected readonly placedOrder = signal<Order | null>(null);
   protected readonly deliveryAddress = signal('');
   protected readonly contactName = signal('');
   protected readonly contactPhone = signal('');
+
+  // The just-placed order's status, updated live from the SSE stream when the
+  // restaurant and driver advance it, falling back to the status at placement.
+  protected readonly liveStatus = computed(() => {
+    const order = this.placedOrder();
+    if (!order) return null;
+    return this.stream.statusFor(order.id) ?? order.status;
+  });
+
+  private static readonly STATUS_LABELS: Record<string, string> = {
+    CREATED: 'Order placed',
+    CONFIRMED: 'Confirmed by restaurant',
+    PREPARING: 'Being prepared',
+    READY_FOR_PICKUP: 'Ready for pickup',
+    OUT_FOR_DELIVERY: 'Out for delivery',
+    DELIVERED: 'Delivered',
+    CANCELLED: 'Cancelled'
+  };
+
+  protected statusLabel(status: string | null): string {
+    return status ? (ConsumerLayoutComponent.STATUS_LABELS[status] ?? status) : '';
+  }
 
   ngOnInit(): void {
     const user = this.auth.user();
@@ -87,6 +115,7 @@ export class ConsumerLayoutComponent implements OnInit {
       this.contactName.set(`${user.firstName} ${user.lastName}`);
       this.contactPhone.set(user.phoneNumber);
     }
+    this.stream.connect();
     this.notifications.loading.set(true);
     this.store.loadPublicData()
       .pipe(finalize(() => this.notifications.loading.set(false)))
@@ -94,6 +123,10 @@ export class ConsumerLayoutComponent implements OnInit {
         this.store.restaurants.set(restaurants);
         this.store.foodItems.set(foodItems);
       });
+  }
+
+  ngOnDestroy(): void {
+    this.stream.disconnect();
   }
 
   protected placeOrder(): void {

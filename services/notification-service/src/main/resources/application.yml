@@ -1,0 +1,49 @@
+server:
+  port: ${PORT:8086}
+
+spring:
+  application:
+    name: notification-service
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    # Same broker-auth surface as the other services: local Compose runs against an
+    # unauthenticated broker; deployed environments set SASL_PLAINTEXT/PLAIN + JAAS.
+    properties:
+      security.protocol: ${KAFKA_SECURITY_PROTOCOL:PLAINTEXT}
+      sasl.mechanism: ${KAFKA_SASL_MECHANISM:PLAIN}
+      sasl.jaas.config: ${KAFKA_SASL_JAAS_CONFIG:}
+    consumer:
+      group-id: notification-service-v1
+      # Notifications are live-only: start at the tail rather than replaying the
+      # whole topic's history to every freshly connected client.
+      auto-offset-reset: latest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.value.default.type: java.util.LinkedHashMap
+        spring.json.trusted.packages: java.util
+    listener:
+      ack-mode: record
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+eureka:
+  client:
+    enabled: ${EUREKA_CLIENT_ENABLED:true}
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: true
+
+security:
+  jwt:
+    secret: ${JWT_SECRET:c3ByaW5nLWJvb3QtdXNlci1zZXJ2aWNlLWxvY2FsLWRldmVsb3BtZW50LXNlY3JldC0yMDI2}
+
+app:
+  kafka:
+    topics:
+      order-events: order.events.v1

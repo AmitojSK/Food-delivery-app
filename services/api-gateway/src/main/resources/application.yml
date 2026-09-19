@@ -83,6 +83,14 @@ spring:
             - Path=/delivery-api/**
           filters:
             - StripPrefix=1
+        # Long-lived SSE stream for live order/delivery updates. No response-timeout is
+        # configured on the gateway, so the streamed connection is not cut short.
+        - id: notification-service
+          uri: ${NOTIFICATION_SERVICE_URI:lb://NOTIFICATION-SERVICE}
+          predicates:
+            - Path=/notification-api/**
+          filters:
+            - StripPrefix=1
 
 management:
   endpoints:

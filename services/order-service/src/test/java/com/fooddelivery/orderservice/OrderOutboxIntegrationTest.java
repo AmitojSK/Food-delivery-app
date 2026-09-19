@@ -109,23 +109,25 @@ class OrderOutboxIntegrationTest {
         orderService.updateOrderStatus(created.id(), new UpdateOrderStatusRequest(OrderStatus.READY_FOR_PICKUP));
 
         List<OrderOutboxEvent> pending = outboxRepository.findTop100ByPublishedAtIsNullOrderByOccurredAtAsc();
-        assertThat(pending).hasSize(1);
-        assertThat(pending.get(0).getEventType()).isEqualTo("OrderReadyForPickup");
-        assertThat(pending.get(0).getAggregateId()).isEqualTo(created.id());
+        // Every transition now also writes an OrderStatusChanged event (for live notification
+        // fan-out), so assert the ready-for-pickup event is present among them rather than alone.
+        OrderOutboxEvent readyForPickup = pending.stream()
+                .filter(event -> "OrderReadyForPickup".equals(event.getEventType()))
+                .findFirst().orElseThrow();
+        assertThat(readyForPickup.getAggregateId()).isEqualTo(created.id());
+        assertThat(pending).anyMatch(event -> "OrderStatusChanged".equals(event.getEventType()));
 
         outboxPublisher.publishPendingEvents();
 
-        OrderOutboxEvent published = outboxRepository.findById(pending.get(0).getId()).orElseThrow();
+        OrderOutboxEvent published = outboxRepository.findById(readyForPickup.getId()).orElseThrow();
         assertThat(published.getPublishedAt()).isNotNull();
 
-        ConsumerRecord<String, String> record = consumeOneRecordFrom("order.events.v1");
-        JsonNode envelope = parse(record.value());
-        assertThat(envelope.get("eventType").asText()).isEqualTo("OrderReadyForPickup");
+        JsonNode envelope = consumeEnvelopeMatching("order.events.v1", "OrderReadyForPickup");
         assertThat(envelope.get("data").get("orderId").asText()).isEqualTo(created.id());
         assertThat(envelope.get("data").get("restaurantId").asInt()).isEqualTo(1);
     }
 
-    private ConsumerRecord<String, String> consumeOneRecordFrom(String topic) {
+    private JsonNode consumeEnvelopeMatching(String topic, String eventType) {
         Map<String, Object> consumerProps = KafkaTestUtils.consumerProps(
                 KAFKA.getBootstrapServers(), "order-outbox-it", "true");
         consumerProps.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
@@ -134,8 +136,11 @@ class OrderOutboxIntegrationTest {
         try (Consumer<String, String> consumer = new org.apache.kafka.clients.consumer.KafkaConsumer<>(consumerProps)) {
             consumer.subscribe(List.of(topic));
             ConsumerRecords<String, String> records = KafkaTestUtils.getRecords(consumer, Duration.ofSeconds(15));
-            assertThat(records.count()).isGreaterThan(0);
-            return records.iterator().next();
+            for (ConsumerRecord<String, String> record : records) {
+                JsonNode envelope = parse(record.value());
+                if (eventType.equals(envelope.get("eventType").asText())) return envelope;
+            }
+            throw new AssertionError("No " + eventType + " event found on topic " + topic);
         }
     }
 
