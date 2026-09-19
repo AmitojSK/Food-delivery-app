@@ -113,7 +113,7 @@ export class ConsumerLayoutComponent implements OnInit, OnDestroy {
     const user = this.auth.user();
     if (user) {
       this.contactName.set(`${user.firstName} ${user.lastName}`);
-      this.contactPhone.set(user.phoneNumber);
+      this.contactPhone.set(user.phoneNumber ?? '');
     }
     this.stream.connect();
     this.notifications.loading.set(true);

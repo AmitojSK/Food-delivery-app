@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, NgZone, OnInit, ViewChild, inject, signal } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { finalize } from 'rxjs';
@@ -41,17 +41,88 @@ type AuthScreen = 'login' | 'register';
           <button type="submit" [disabled]="notifications.saving()">Create account</button>
         </form>
       }
+
+      @if (googleEnabled()) {
+        <div class="auth-divider"><span>or</span></div>
+      }
+      <div #googleBtn class="google-signin"></div>
     </section>
   `
 })
-export class AuthComponent {
+export class AuthComponent implements OnInit, AfterViewInit {
   private readonly api = inject(FoodDeliveryApi);
   private readonly auth = inject(AuthSession);
   private readonly router = inject(Router);
   protected readonly notifications = inject(NotificationService);
   private readonly fb = inject(FormBuilder);
+  private readonly zone = inject(NgZone);
+
+  @ViewChild('googleBtn') private googleBtn?: ElementRef<HTMLElement>;
 
   protected readonly screen = signal<AuthScreen>('login');
+  protected readonly googleEnabled = signal(false);
+  private clientId = '';
+  private viewReady = false;
+
+  ngOnInit(): void {
+    // The client id is env-driven (served by the backend), so the button only
+    // appears when Google sign-in is actually configured.
+    this.api.googleConfig().subscribe(cfg => {
+      if (cfg.clientId) {
+        this.clientId = cfg.clientId;
+        this.googleEnabled.set(true);
+        this.loadGsiScript().then(() => this.renderGoogleButton());
+      }
+    });
+  }
+
+  ngAfterViewInit(): void {
+    this.viewReady = true;
+    if (this.googleEnabled()) this.renderGoogleButton();
+  }
+
+  private loadGsiScript(): Promise<void> {
+    const g = (window as any).google;
+    if (g?.accounts?.id) return Promise.resolve();
+    const existing = document.getElementById('google-gsi');
+    if (existing) return new Promise(resolve => existing.addEventListener('load', () => resolve()));
+    return new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.id = 'google-gsi';
+      s.src = 'https://accounts.google.com/gsi/client';
+      s.async = true;
+      s.defer = true;
+      s.onload = () => resolve();
+      s.onerror = () => reject();
+      document.head.appendChild(s);
+    });
+  }
+
+  private renderGoogleButton(): void {
+    const g = (window as any).google;
+    if (!g?.accounts?.id || !this.viewReady || !this.googleBtn) return;
+    g.accounts.id.initialize({
+      client_id: this.clientId,
+      callback: (resp: { credential: string }) => this.onGoogleCredential(resp.credential)
+    });
+    g.accounts.id.renderButton(this.googleBtn.nativeElement, {
+      theme: 'outline', size: 'large', text: 'continue_with', width: 320
+    });
+  }
+
+  private onGoogleCredential(credential: string): void {
+    // GSI's callback fires outside Angular's zone; re-enter so signals update the view.
+    this.zone.run(() => {
+      this.notifications.clearMessages();
+      this.notifications.saving.set(true);
+      this.api.googleSignIn(credential)
+        .pipe(finalize(() => this.notifications.saving.set(false)))
+        .subscribe({
+          next: response => this.completeAuth(response),
+          error: (e: Error) => this.notifications.error.set(e.message || 'Google sign-in failed.')
+        });
+    });
+  }
 
   protected readonly loginForm = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],

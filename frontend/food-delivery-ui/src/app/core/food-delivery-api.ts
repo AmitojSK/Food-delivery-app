@@ -1,6 +1,6 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, throwError } from 'rxjs';
+import { Observable, catchError, of, throwError } from 'rxjs';
 import {
   ApiErrorResponse,
   AuthenticationResponse,
@@ -29,6 +29,18 @@ export class FoodDeliveryApi {
     return this.http
       .post<AuthenticationResponse>('/user-api/api/v1/auth/login', request)
       .pipe(catchError(handleApiError));
+  }
+
+  googleSignIn(idToken: string): Observable<AuthenticationResponse> {
+    return this.http
+      .post<AuthenticationResponse>('/user-api/api/v1/auth/google', { idToken })
+      .pipe(catchError(handleApiError));
+  }
+
+  googleConfig(): Observable<{ clientId: string }> {
+    return this.http
+      .get<{ clientId: string }>('/user-api/api/v1/auth/google/config')
+      .pipe(catchError(() => of({ clientId: '' })));
   }
 
   listUsers(): Observable<User[]> {

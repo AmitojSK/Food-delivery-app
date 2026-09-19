@@ -172,6 +172,7 @@ services:
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-server:8761/eureka/
       JWT_SECRET: ${JWT_SECRET:-c3ByaW5nLWJvb3QtdXNlci1zZXJ2aWNlLWxvY2FsLWRldmVsb3BtZW50LXNlY3JldC0yMDI2}
       OTLP_TRACING_ENDPOINT: http://tempo:4318/v1/traces
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     ports:
       - "8081:8081"

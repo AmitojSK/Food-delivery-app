@@ -50,3 +50,6 @@ security:
     enabled: ${BOOTSTRAP_ADMIN_ENABLED:false}
     email: ${BOOTSTRAP_ADMIN_EMAIL:}
     password: ${BOOTSTRAP_ADMIN_PASSWORD:}
+  google:
+    # Public OAuth client id (from Google Cloud Console). Empty = Google sign-in disabled.
+    client-id: ${GOOGLE_CLIENT_ID:}
