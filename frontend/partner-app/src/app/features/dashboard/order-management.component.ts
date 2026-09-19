@@ -1,8 +1,9 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, effect, inject, OnDestroy, OnInit, signal, untracked } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { SlicePipe } from '@angular/common';
 import { PartnerApi } from '../../core/partner-api';
 import { NotificationService } from '../../core/notification.service';
+import { RealtimeStream, OrderStatusEvent } from '../../core/realtime-stream.service';
 import { Order, OrderStatus } from '../../core/models';
 
 @Component({
@@ -125,12 +126,24 @@ import { Order, OrderStatus } from '../../core/models';
     .status-text { color: var(--ink-faint); }
   `]
 })
-export class OrderManagementComponent implements OnInit {
+export class OrderManagementComponent implements OnInit, OnDestroy {
   private readonly api = inject(PartnerApi);
   private readonly route = inject(ActivatedRoute);
   private readonly notify = inject(NotificationService);
+  private readonly stream = inject(RealtimeStream);
 
   private restaurantId = 0;
+
+  constructor() {
+    // React to live order events for this restaurant: update a known order's status
+    // in place, or reload when a new order arrives (or a filter is active).
+    effect(() => {
+      const event = this.stream.lastEvent();
+      // untracked: react only to new events, not to the orders/filter signals the
+      // handler itself reads and writes (which would otherwise re-trigger this effect).
+      if (event) untracked(() => this.applyEvent(event));
+    });
+  }
 
   orders = signal<Order[]>([]);
   loading = signal(true);
@@ -150,6 +163,27 @@ export class OrderManagementComponent implements OnInit {
   ngOnInit(): void {
     this.restaurantId = Number(this.route.snapshot.paramMap.get('id'));
     this.loadOrders();
+    this.stream.connect();
+  }
+
+  ngOnDestroy(): void {
+    this.stream.disconnect();
+  }
+
+  private applyEvent(event: OrderStatusEvent): void {
+    if (!this.restaurantId || Number(event.restaurantId) !== this.restaurantId) return;
+    const known = this.orders().some(o => o.id === event.orderId);
+    if (event.status === 'CREATED' && !known) {
+      this.notify.show('🔔 New order received');
+    }
+    // With a status filter active, reload so the list keeps matching the filter.
+    if (this.activeFilter()) { this.loadOrders(); return; }
+    if (known) {
+      this.orders.update(list =>
+        list.map(o => o.id === event.orderId ? { ...o, status: event.status as OrderStatus } : o));
+    } else {
+      this.loadOrders();
+    }
   }
 
   filterByStatus(status: OrderStatus | null): void {

@@ -19,6 +19,10 @@ public class Order {
 
     private Long restaurantId;
 
+    // Snapshot of the restaurant's owner at order time, so lifecycle events can be
+    // routed to the owning partner for live updates without a lookup per transition.
+    private Long restaurantOwnerId;
+
     private String deliveryAddress;
 
     private String contactName;
@@ -59,6 +63,14 @@ public class Order {
 
     public void setRestaurantId(Long restaurantId) {
         this.restaurantId = restaurantId;
+    }
+
+    public Long getRestaurantOwnerId() {
+        return restaurantOwnerId;
+    }
+
+    public void setRestaurantOwnerId(Long restaurantOwnerId) {
+        this.restaurantOwnerId = restaurantOwnerId;
     }
 
     public String getDeliveryAddress() { return deliveryAddress; }

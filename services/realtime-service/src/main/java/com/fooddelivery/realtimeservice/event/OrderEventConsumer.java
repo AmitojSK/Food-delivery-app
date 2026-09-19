@@ -31,12 +31,23 @@ public class OrderEventConsumer {
             if (envelope == null || !"OrderStatusChanged".equals(envelope.get("eventType"))) return;
             Map<String, Object> data = (Map<String, Object>) envelope.get("data");
             if (data == null) return;
-            Number userId = (Number) data.get("userId");
-            if (userId == null) return;
-            hub.publish(userId.longValue(), "order-status", Map.of(
+
+            Map<String, Object> payload = Map.of(
                     "orderId", String.valueOf(data.getOrDefault("orderId", "")),
+                    "restaurantId", String.valueOf(data.getOrDefault("restaurantId", "")),
                     "status", String.valueOf(data.getOrDefault("status", "")),
-                    "occurredAt", String.valueOf(envelope.getOrDefault("occurredAt", ""))));
+                    "occurredAt", String.valueOf(envelope.getOrDefault("occurredAt", "")));
+
+            // The same event matters to two people: the ordering customer ("your order")
+            // and the restaurant owner ("an order for your restaurant"). Fan out to both;
+            // each app opens its own per-user stream and interprets the payload in context.
+            Number userId = (Number) data.get("userId");
+            if (userId != null) hub.publish(userId.longValue(), "order-status", payload);
+
+            Number ownerId = (Number) data.get("ownerId");
+            if (ownerId != null && !ownerId.equals(userId)) {
+                hub.publish(ownerId.longValue(), "order-status", payload);
+            }
         } catch (Exception e) {
             log.warn("Skipping order event that could not be fanned out over SSE", e);
         }

@@ -16,6 +16,7 @@ import com.fooddelivery.orderservice.repository.OrderRepository;
 import com.fooddelivery.orderservice.event.OrderOutboxEvent;
 import com.fooddelivery.orderservice.event.OrderOutboxRepository;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.math.BigDecimal;
@@ -46,10 +47,11 @@ public class OrderService {
 
     @Transactional
     public OrderResponse createOrder(CreateOrderRequest request) {
-        validateRestaurant(request.restaurantId());
+        RestaurantResponse restaurant = validateRestaurant(request.restaurantId());
         validateFoodItems(request.restaurantId(), request.items());
 
         Order order = orderMapper.toEntity(request, DEFAULT_DELIVERY_FEE);
+        order.setRestaurantOwnerId(restaurant.ownerId());
         Order saved = orderRepository.save(order);
         addStatusChangedEvent(saved);
         return orderMapper.toResponse(saved);
@@ -134,7 +136,7 @@ public class OrderService {
                 .orElseThrow(() -> new ResourceNotFoundException("Order with id " + id + " was not found"));
     }
 
-    private void validateRestaurant(Long restaurantId) {
+    private RestaurantResponse validateRestaurant(Long restaurantId) {
         RestaurantResponse restaurant;
         try {
             restaurant = serviceClient.getRestaurant(restaurantId);
@@ -148,6 +150,7 @@ public class OrderService {
         if (!restaurant.active()) {
             throw new OrderValidationException("Restaurant with id " + restaurantId + " is not currently active");
         }
+        return restaurant;
     }
 
     private void validateRestaurantOwnership(Long restaurantId, Long ownerId) {
@@ -237,8 +240,15 @@ public class OrderService {
         event.setCorrelationId(order.getId());
         event.setCausationId(eventId);
         event.setOccurredAt(Instant.now());
-        event.setData(Map.of("orderId", order.getId(), "userId", order.getUserId(),
-                "restaurantId", order.getRestaurantId(), "status", order.getStatus().name()));
+        // LinkedHashMap rather than Map.of: restaurantOwnerId is null on orders created
+        // before that field existed, and Map.of rejects null values.
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("orderId", order.getId());
+        data.put("userId", order.getUserId());
+        data.put("ownerId", order.getRestaurantOwnerId());
+        data.put("restaurantId", order.getRestaurantId());
+        data.put("status", order.getStatus().name());
+        event.setData(data);
         outboxRepository.save(event);
     }
 }
