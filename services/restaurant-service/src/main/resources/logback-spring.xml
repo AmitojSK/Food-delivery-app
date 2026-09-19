@@ -1,14 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
     <springProperty scope="context" name="appName" source="spring.application.name" defaultValue="app"/>
-    <!-- Structured JSON logs including MDC (traceId/spanId from Micrometer Tracing). -->
+    <!-- Structured JSON logs to stdout; MDC carries traceId/spanId from Micrometer Tracing. -->
     <appender name="JSON" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="net.logstash.logback.encoder.LogstashEncoder">
             <includeContext>false</includeContext>
             <customFields>{"service":"${appName}"}</customFields>
         </encoder>
     </appender>
+    <!-- Bridges logs to the OpenTelemetry SDK. Spring Boot installs the SDK + OTLP log
+         exporter into this appender when management.otlp.logging.export is enabled;
+         otherwise it is a no-op, so local/dev logging is unaffected. -->
+    <appender name="OTEL" class="io.opentelemetry.instrumentation.logback.appender.v1_0.OpenTelemetryAppender">
+        <captureMdcAttributes>*</captureMdcAttributes>
+    </appender>
     <root level="INFO">
         <appender-ref ref="JSON"/>
+        <appender-ref ref="OTEL"/>
     </root>
 </configuration>

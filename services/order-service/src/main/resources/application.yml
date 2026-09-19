@@ -53,14 +53,24 @@ management:
       endpoint: ${OTLP_TRACING_ENDPOINT:http://localhost:4318/v1/traces}
       headers:
         Authorization: ${OTLP_AUTH_HEADER:}
+        api-key: ${OTLP_API_KEY:}
     metrics:
       export:
         # Push metrics via OTLP (e.g. to Grafana Cloud) in prod; local uses Prometheus scrape.
         enabled: ${OTLP_METRICS_ENABLED:false}
         url: ${OTLP_METRICS_URL:http://localhost:4318/v1/metrics}
         step: 30s
+        aggregation-temporality: ${OTLP_METRICS_TEMPORALITY:cumulative}
         headers:
           Authorization: ${OTLP_AUTH_HEADER:}
+          api-key: ${OTLP_API_KEY:}
+    logging:
+      endpoint: ${OTLP_LOGS_URL:http://localhost:4318/v1/logs}
+      export:
+        enabled: ${OTLP_LOGS_ENABLED:false}
+      headers:
+        Authorization: ${OTLP_AUTH_HEADER:}
+        api-key: ${OTLP_API_KEY:}
 
 eureka:
   client:
