@@ -1,0 +1,24 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+# Scrapes each Spring Boot service's Micrometer/Prometheus endpoint. Local-only:
+# in production the Render services sleep, so scraping them is impractical.
+scrape_configs:
+  - job_name: spring-services
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets:
+          - api-gateway:8080
+          - user-service:8081
+          - restaurant-service:8082
+          - food-catalogue-service:8083
+          - order-service:8084
+          - delivery-service:8085
+          - realtime-service:8086
+        labels:
+          stack: food-delivery
+    relabel_configs:
+      - source_labels: [__address__]
+        regex: '([^:]+):.*'
+        target_label: service

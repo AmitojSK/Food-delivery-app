@@ -171,6 +171,7 @@ services:
       USER_SERVICE_DB_PASSWORD: user_service_password
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-server:8761/eureka/
       JWT_SECRET: ${JWT_SECRET:-c3ByaW5nLWJvb3QtdXNlci1zZXJ2aWNlLWxvY2FsLWRldmVsb3BtZW50LXNlY3JldC0yMDI2}
+      OTLP_TRACING_ENDPOINT: http://tempo:4318/v1/traces
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     ports:
       - "8081:8081"
@@ -196,6 +197,7 @@ services:
       RESTAURANT_SERVICE_DB_PASSWORD: restaurant_service_password
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-server:8761/eureka/
       JWT_SECRET: ${JWT_SECRET:-c3ByaW5nLWJvb3QtdXNlci1zZXJ2aWNlLWxvY2FsLWRldmVsb3BtZW50LXNlY3JldC0yMDI2}
+      OTLP_TRACING_ENDPOINT: http://tempo:4318/v1/traces
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     ports:
       - "8082:8082"
@@ -219,6 +221,7 @@ services:
       FOOD_CATALOGUE_SERVICE_DB_PASSWORD: food_catalogue_service_password
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-server:8761/eureka/
       JWT_SECRET: ${JWT_SECRET:-c3ByaW5nLWJvb3QtdXNlci1zZXJ2aWNlLWxvY2FsLWRldmVsb3BtZW50LXNlY3JldC0yMDI2}
+      OTLP_TRACING_ENDPOINT: http://tempo:4318/v1/traces
     ports:
       - "8083:8083"
     healthcheck:
@@ -241,6 +244,7 @@ services:
       ORDER_SERVICE_MONGODB_URI: mongodb://order_service:order_service_password@order-service-mongodb:27017/order_service_db?authSource=admin&replicaSet=rs0
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-server:8761/eureka/
       JWT_SECRET: ${JWT_SECRET:-c3ByaW5nLWJvb3QtdXNlci1zZXJ2aWNlLWxvY2FsLWRldmVsb3BtZW50LXNlY3JldC0yMDI2}
+      OTLP_TRACING_ENDPOINT: http://tempo:4318/v1/traces
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     ports:
       - "8084:8084"
@@ -268,6 +272,7 @@ services:
       DELIVERY_SERVICE_DB_PASSWORD: delivery_service_password
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-server:8761/eureka/
       JWT_SECRET: ${JWT_SECRET:-c3ByaW5nLWJvb3QtdXNlci1zZXJ2aWNlLWxvY2FsLWRldmVsb3BtZW50LXNlY3JldC0yMDI2}
+      OTLP_TRACING_ENDPOINT: http://tempo:4318/v1/traces
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       REDIS_HOST: redis
       REDIS_PORT: 6379
@@ -291,6 +296,7 @@ services:
     environment:
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-server:8761/eureka/
       JWT_SECRET: ${JWT_SECRET:-c3ByaW5nLWJvb3QtdXNlci1zZXJ2aWNlLWxvY2FsLWRldmVsb3BtZW50LXNlY3JldC0yMDI2}
+      OTLP_TRACING_ENDPOINT: http://tempo:4318/v1/traces
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     ports:
       - "8086:8086"
@@ -323,6 +329,7 @@ services:
     environment:
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-server:8761/eureka/
       JWT_SECRET: ${JWT_SECRET:-c3ByaW5nLWJvb3QtdXNlci1zZXJ2aWNlLWxvY2FsLWRldmVsb3BtZW50LXNlY3JldC0yMDI2}
+      OTLP_TRACING_ENDPOINT: http://tempo:4318/v1/traces
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_local_password}
@@ -354,6 +361,64 @@ services:
       - api-gateway
     ports:
       - "4400:80"
+
+  # ---------- observability (local only: `docker compose --profile observability up`) ----------
+
+  prometheus:
+    image: prom/prometheus:v3.1.0
+    container_name: prometheus
+    profiles: ["observability"]
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+
+  tempo:
+    image: grafana/tempo:2.7.1
+    container_name: tempo
+    profiles: ["observability"]
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes:
+      - ./observability/tempo.yaml:/etc/tempo.yaml:ro
+    ports:
+      - "3200:3200"
+      - "4318:4318"
+
+  loki:
+    image: grafana/loki:3.3.2
+    container_name: loki
+    profiles: ["observability"]
+    ports:
+      - "3100:3100"
+
+  promtail:
+    image: grafana/promtail:3.3.2
+    container_name: promtail
+    profiles: ["observability"]
+    command: ["-config.file=/etc/promtail/config.yaml"]
+    volumes:
+      - ./observability/promtail.yaml:/etc/promtail/config.yaml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - loki
+
+  grafana:
+    image: grafana/grafana:11.5.1
+    container_name: grafana
+    profiles: ["observability"]
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/etc/grafana/dashboards:ro
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+      - tempo
+      - loki
 
 volumes:
   user_service_mysql_data:
