@@ -1,9 +1,7 @@
 package com.fooddelivery.realtimeservice.sse;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,11 +10,12 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /**
- * Holds the live SSE connections, keyed by user id, and fans events out to them.
- * State is intentionally in-memory: on the single-instance free tier that is
- * sufficient, and a connection is cheap to re-establish. If this ever scales to
- * multiple instances, each instance would subscribe to Kafka and fan out to only
- * the connections it holds, so no shared store is required for correctness.
+ * Holds the live SSE connections and fans events out to them, either to a single
+ * user (an order's customer or owner) or to everyone in a role (the open delivery
+ * job board, which every driver watches). State is intentionally in-memory: on the
+ * single-instance free tier that is sufficient, and a connection is cheap to
+ * re-establish. At multi-instance scale each instance would subscribe to Kafka and
+ * fan out to only the connections it holds, so no shared store is needed.
  */
 @Component
 public class SseHub {
@@ -24,30 +23,35 @@ public class SseHub {
     // Long timeout; the browser client reconnects, and a heartbeat keeps proxies from closing idle streams.
     private static final long STREAM_TIMEOUT_MS = 30 * 60 * 1000L;
 
-    private final Map<Long, List<SseEmitter>> byUser = new ConcurrentHashMap<>();
+    private record Connection(long userId, String role, SseEmitter emitter) {}
 
-    public SseEmitter register(long userId) {
+    private final List<Connection> connections = new CopyOnWriteArrayList<>();
+
+    public SseEmitter register(long userId, String role) {
         SseEmitter emitter = new SseEmitter(STREAM_TIMEOUT_MS);
-        byUser.computeIfAbsent(userId, key -> new CopyOnWriteArrayList<>()).add(emitter);
-        emitter.onCompletion(() -> remove(userId, emitter));
-        emitter.onTimeout(() -> { emitter.complete(); remove(userId, emitter); });
-        emitter.onError(error -> remove(userId, emitter));
-        try {
-            emitter.send(SseEmitter.event().name("connected").data(Map.of("ok", true)));
-        } catch (IOException e) {
-            remove(userId, emitter);
-        }
+        Connection connection = new Connection(userId, role, emitter);
+        connections.add(connection);
+        emitter.onCompletion(() -> connections.remove(connection));
+        emitter.onTimeout(() -> { emitter.complete(); connections.remove(connection); });
+        emitter.onError(error -> connections.remove(connection));
+        send(connection, SseEmitter.event().name("connected").data(Map.of("ok", true)));
         return emitter;
     }
 
-    public void publish(long userId, String eventName, Object payload) {
-        List<SseEmitter> emitters = byUser.get(userId);
-        if (emitters == null) return;
-        for (SseEmitter emitter : emitters) {
-            try {
-                emitter.send(SseEmitter.event().name(eventName).data(payload));
-            } catch (Exception e) {
-                remove(userId, emitter);
+    /** Deliver to every connection owned by one user. */
+    public void publishToUser(long userId, String eventName, Object payload) {
+        for (Connection connection : connections) {
+            if (connection.userId() == userId) {
+                send(connection, SseEmitter.event().name(eventName).data(payload));
+            }
+        }
+    }
+
+    /** Broadcast to every connection holding a given role (e.g. the driver job board). */
+    public void publishToRole(String role, String eventName, Object payload) {
+        for (Connection connection : connections) {
+            if (role.equals(connection.role())) {
+                send(connection, SseEmitter.event().name(eventName).data(payload));
             }
         }
     }
@@ -55,22 +59,16 @@ public class SseHub {
     // Comment frames keep the connection warm without the client treating them as events.
     @Scheduled(fixedRate = 20000)
     public void heartbeat() {
-        byUser.forEach((userId, emitters) -> {
-            for (SseEmitter emitter : emitters) {
-                try {
-                    emitter.send(SseEmitter.event().comment("ping"));
-                } catch (Exception e) {
-                    remove(userId, emitter);
-                }
-            }
-        });
+        for (Connection connection : connections) {
+            send(connection, SseEmitter.event().comment("ping"));
+        }
     }
 
-    private void remove(long userId, SseEmitter emitter) {
-        List<SseEmitter> emitters = byUser.get(userId);
-        if (emitters != null) {
-            emitters.remove(emitter);
-            if (emitters.isEmpty()) byUser.remove(userId);
+    private void send(Connection connection, SseEmitter.SseEventBuilder event) {
+        try {
+            connection.emitter().send(event);
+        } catch (Exception e) {
+            connections.remove(connection);
         }
     }
 }

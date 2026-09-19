@@ -1,8 +1,9 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, effect, inject, OnDestroy, OnInit, signal, untracked } from '@angular/core';
 import { Router } from '@angular/router';
 import { SlicePipe } from '@angular/common';
 import { DeliveryApi } from '../../core/delivery-api';
 import { NotificationService } from '../../core/notification.service';
+import { RealtimeStream, DeliveryStatusEvent } from '../../core/realtime-stream.service';
 import { Delivery } from '../../core/models';
 
 @Component({
@@ -74,15 +75,45 @@ import { Delivery } from '../../core/models';
     .status-text { color: var(--ink-faint); }
   `]
 })
-export class AvailableDeliveriesComponent implements OnInit {
+export class AvailableDeliveriesComponent implements OnInit, OnDestroy {
   private readonly api = inject(DeliveryApi);
   private readonly router = inject(Router);
   private readonly notify = inject(NotificationService);
+  private readonly stream = inject(RealtimeStream);
 
   deliveries = signal<Delivery[]>([]);
   loading = signal(true);
 
-  ngOnInit(): void { this.load(); }
+  constructor() {
+    // React to live delivery-board events broadcast to all drivers.
+    effect(() => {
+      const event = this.stream.lastEvent();
+      if (event) untracked(() => this.applyEvent(event));
+    });
+  }
+
+  ngOnInit(): void {
+    this.load();
+    this.stream.connect();
+  }
+
+  ngOnDestroy(): void {
+    this.stream.disconnect();
+  }
+
+  private applyEvent(event: DeliveryStatusEvent): void {
+    const id = Number(event.deliveryId);
+    if (event.status === 'PENDING') {
+      // A new job appeared. Reload to pull its full details (addresses aren't in the event).
+      if (!this.deliveries().some(d => d.id === id)) {
+        this.notify.show('🛵 New delivery available');
+        this.load();
+      }
+    } else {
+      // Taken or advanced past PENDING — remove it from the available board.
+      this.deliveries.update(list => list.filter(d => d.id !== id));
+    }
+  }
 
   load(): void {
     this.loading.set(true);

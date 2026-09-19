@@ -21,6 +21,6 @@ public class RealtimeController {
     // events tagged with their own id, so no per-resource authorization is needed here.
     @GetMapping(produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter stream(@AuthenticationPrincipal JwtPrincipal principal) {
-        return hub.register(principal.userId());
+        return hub.register(principal.userId(), principal.role());
     }
 }

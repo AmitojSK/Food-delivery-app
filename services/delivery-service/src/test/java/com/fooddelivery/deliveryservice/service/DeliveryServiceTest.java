@@ -67,7 +67,8 @@ class DeliveryServiceTest {
                 new CreateDeliveryRequest("order-1", 1L, 99L, "12 MG Road", "45 Church St"));
 
         assertThat(response.status()).isEqualTo("PENDING");
-        verify(eventPublisher, never()).publish(any(), any());
+        // Creating a PENDING delivery announces it so drivers' job boards update live.
+        verify(eventPublisher).publish(any(), eq("DeliveryCreated"));
     }
 
     @Test

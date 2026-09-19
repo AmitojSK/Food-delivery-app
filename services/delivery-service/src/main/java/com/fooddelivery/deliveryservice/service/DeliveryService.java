@@ -40,7 +40,10 @@ public class DeliveryService {
             throw new DeliveryValidationException("Delivery for order " + request.orderId() + " already exists");
         });
         Delivery delivery = deliveryMapper.toEntity(request);
-        return deliveryMapper.toResponse(deliveryRepository.save(delivery));
+        Delivery saved = deliveryRepository.save(delivery);
+        // Announce the new PENDING job so any driver's available-jobs board updates live.
+        eventPublisher.publish(saved, "DeliveryCreated");
+        return deliveryMapper.toResponse(saved);
     }
 
     @Transactional(readOnly = true)

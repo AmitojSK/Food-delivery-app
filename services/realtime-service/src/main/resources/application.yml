@@ -47,3 +47,4 @@ app:
   kafka:
     topics:
       order-events: order.events.v1
+      delivery-events: delivery.events.v1
