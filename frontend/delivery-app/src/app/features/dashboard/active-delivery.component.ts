@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { SlicePipe } from '@angular/common';
 import { DeliveryApi } from '../../core/delivery-api';
 import { NotificationService } from '../../core/notification.service';
@@ -50,6 +50,10 @@ import { Delivery, DeliveryStatus } from '../../core/models';
                   <button class="btn-action delivered" (click)="updateStatus(d, 'DELIVERED')">✅ Delivered</button>
                 }
               }
+              <button type="button" class="btn-location" [class.sharing]="sharingId() === d.id"
+                      (click)="toggleLocationSharing(d)">
+                {{ sharingId() === d.id ? '📍 Sharing location — stop' : '📍 Share live location' }}
+              </button>
             </div>
           </div>
         }
@@ -79,24 +83,73 @@ import { Delivery, DeliveryStatus } from '../../core/models';
     }
     .btn-action.delivered { background: var(--success); }
     .btn-action:hover { opacity: 0.9; }
+    .btn-location {
+      flex: 1; padding: 10px; background: var(--surface); color: var(--ink);
+      border: 1px solid var(--line); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;
+    }
+    .btn-location.sharing { background: var(--brand-tint); color: var(--brand-strong); border-color: var(--brand-strong); }
+    .btn-location:hover { opacity: 0.9; }
     .empty-state { text-align: center; padding: 60px 20px; color: var(--ink-faint); }
     .hint { font-size: 13px; margin-top: 4px; }
     .status-text { color: var(--ink-faint); }
   `]
 })
-export class ActiveDeliveryComponent implements OnInit {
+export class ActiveDeliveryComponent implements OnInit, OnDestroy {
   private readonly api = inject(DeliveryApi);
   private readonly notify = inject(NotificationService);
 
   deliveries = signal<Delivery[]>([]);
   loading = signal(true);
 
+  /** Id of the delivery whose location is currently being shared, or null. */
+  sharingId = signal<number | null>(null);
+  private watchId: number | null = null;
+
   ngOnInit(): void { this.load(); }
+
+  ngOnDestroy(): void { this.stopSharing(); }
+
+  /**
+   * Stream the driver's real GPS position to the delivery service, which caches
+   * it (Redis, short TTL) for the customer's live tracking map. Uses the browser
+   * Geolocation API's watchPosition so the marker follows the device in real time.
+   */
+  toggleLocationSharing(delivery: Delivery): void {
+    if (this.sharingId() === delivery.id) {
+      this.stopSharing();
+      this.notify.show('Stopped sharing location');
+      return;
+    }
+    if (!('geolocation' in navigator)) {
+      this.notify.show('Geolocation is not available in this browser');
+      return;
+    }
+    this.stopSharing(); // only one active at a time
+    this.watchId = navigator.geolocation.watchPosition(
+      position => this.api.updateLocation(delivery.id, {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude
+      }).subscribe({ error: err => this.notify.show(err.message) }),
+      error => { this.notify.show(`Location error: ${error.message}`); this.stopSharing(); },
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+    );
+    this.sharingId.set(delivery.id);
+    this.notify.show('Sharing live location…');
+  }
+
+  private stopSharing(): void {
+    if (this.watchId !== null) {
+      navigator.geolocation.clearWatch(this.watchId);
+      this.watchId = null;
+    }
+    this.sharingId.set(null);
+  }
 
   updateStatus(delivery: Delivery, status: DeliveryStatus): void {
     this.api.updateStatus(delivery.id, { status }).subscribe({
       next: updated => {
         if (status === 'DELIVERED') {
+          if (this.sharingId() === updated.id) this.stopSharing();
           this.deliveries.update(list => list.filter(d => d.id !== updated.id));
           this.notify.show('Delivery completed!');
         } else {
