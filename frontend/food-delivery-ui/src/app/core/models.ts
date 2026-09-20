@@ -118,6 +118,22 @@ export interface CreateOrderRequest {
   items: CreateOrderItemRequest[];
 }
 
+export interface Delivery {
+  id: number;
+  orderId: string;
+  status: string;
+  driverId: number | null;
+  pickupAddress: string;
+  deliveryAddress: string;
+}
+
+export interface DriverLocation {
+  driverId: number;
+  latitude: number;
+  longitude: number;
+  updatedAt: string;
+}
+
 export interface ApiErrorResponse {
   timestamp: string;
   status: number;

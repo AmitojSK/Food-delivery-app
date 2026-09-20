@@ -9,10 +9,11 @@ import { FoodDeliveryApi } from '../../core/food-delivery-api';
 import { NotificationService } from '../../core/notification.service';
 import { RealtimeStream } from '../../core/realtime-stream.service';
 import { CreateOrderRequest, Order } from '../../core/models';
+import { DeliveryTrackingComponent } from './delivery-tracking.component';
 
 @Component({
   selector: 'app-consumer-layout',
-  imports: [CommonModule, RouterOutlet],
+  imports: [CommonModule, RouterOutlet, DeliveryTrackingComponent],
   template: `
     <section class="consumer-grid">
       <div class="consumer-main">
@@ -68,6 +69,9 @@ import { CreateOrderRequest, Order } from '../../core/models';
               <span class="live-dot" aria-hidden="true"></span>
               <span>{{ statusLabel(liveStatus()) }}</span>
             </div>
+            @if (liveStatus() === 'OUT_FOR_DELIVERY' || liveStatus() === 'DELIVERED') {
+              <app-delivery-tracking [orderId]="order.id" [status]="liveStatus()!" />
+            }
           </div>
         }
       </aside>

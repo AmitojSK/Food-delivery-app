@@ -8,6 +8,8 @@ import {
   CreateOrderRequest,
   CreateRestaurantRequest,
   CreateUserRequest,
+  Delivery,
+  DriverLocation,
   FoodItem,
   LoginRequest,
   Order,
@@ -84,6 +86,19 @@ export class FoodDeliveryApi {
 
   createOrder(request: CreateOrderRequest): Observable<Order> {
     return this.http.post<Order>('/order-api/api/v1/orders', request).pipe(catchError(handleApiError));
+  }
+
+  // Tracking. Both return null instead of erroring when nothing exists yet: a delivery
+  // is created only once the order is ready, and a driver location only after the driver
+  // is assigned and reports one, so 404s are the normal "not yet" case while polling.
+  getDeliveryByOrder(orderId: string): Observable<Delivery | null> {
+    return this.http.get<Delivery>(`/delivery-api/api/v1/deliveries/order/${orderId}`)
+      .pipe(catchError(() => of(null)));
+  }
+
+  getDriverLocation(deliveryId: number): Observable<DriverLocation | null> {
+    return this.http.get<DriverLocation>(`/delivery-api/api/v1/deliveries/${deliveryId}/driver-location`)
+      .pipe(catchError(() => of(null)));
   }
 }
 
