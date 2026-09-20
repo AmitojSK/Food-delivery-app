@@ -21,14 +21,18 @@ import { NotificationService } from '../../core/notification.service';
       </aside>
 
       <section class="admin-workspace">
-        <router-outlet />
+        @if (notifications.loading()) {
+          <div class="loading-inline"><span class="spinner"></span> Loading…</div>
+        } @else {
+          <router-outlet />
+        }
       </section>
     </section>
   `
 })
 export class AdminLayoutComponent implements OnInit {
   private readonly store = inject(DataStore);
-  private readonly notifications = inject(NotificationService);
+  protected readonly notifications = inject(NotificationService);
 
   ngOnInit(): void {
     this.notifications.loading.set(true);
