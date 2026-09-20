@@ -7,6 +7,9 @@
     @if (auth.isAuthenticated()) {
       <div class="account-actions">
         <span class="user-badge">{{ auth.user()?.firstName }}</span>
+        @if (!isAdminRoute()) {
+          <a routerLink="/restaurants/my-orders"><button class="secondary" type="button">My Orders</button></a>
+        }
         @if (auth.isAdmin()) {
           <nav class="mode-switch" aria-label="Workflow">
             <a routerLink="/restaurants"><button type="button" [class.active]="!isAdminRoute()">Shop</button></a>

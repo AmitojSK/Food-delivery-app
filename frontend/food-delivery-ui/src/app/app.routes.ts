@@ -13,6 +13,7 @@ export const routes: Routes = [
         loadComponent: () => import('./features/consumer/consumer-layout.component').then(m => m.ConsumerLayoutComponent),
         children: [
           { path: '', loadComponent: () => import('./features/consumer/restaurant-list.component').then(m => m.RestaurantListComponent) },
+          { path: 'my-orders', loadComponent: () => import('./features/consumer/my-orders.component').then(m => m.MyOrdersComponent) },
           { path: ':id/menu', loadComponent: () => import('./features/consumer/menu.component').then(m => m.MenuComponent) }
         ]
       },

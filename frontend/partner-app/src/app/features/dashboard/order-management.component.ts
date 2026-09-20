@@ -205,10 +205,15 @@ export class OrderManagementComponent implements OnInit, OnDestroy {
     this.loading.set(true);
     this.api.listOrders(this.restaurantId, this.activeFilter() ?? undefined).subscribe({
       next: orders => {
-        this.orders.set(orders);
+        this.orders.set(this.newestFirst(orders));
         this.loading.set(false);
       },
       error: () => this.loading.set(false)
     });
+  }
+
+  /** Newest orders first, so a freshly-placed order lands at the top, not buried at the bottom. */
+  private newestFirst(orders: Order[]): Order[] {
+    return [...orders].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }
 }

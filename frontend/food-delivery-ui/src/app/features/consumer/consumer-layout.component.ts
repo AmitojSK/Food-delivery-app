@@ -1,6 +1,7 @@
 import { Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
 import { AuthSession } from '../../core/auth-session';
 import { CartService } from '../../core/cart.service';
@@ -13,7 +14,7 @@ import { DeliveryTrackingComponent } from './delivery-tracking.component';
 
 @Component({
   selector: 'app-consumer-layout',
-  imports: [CommonModule, RouterOutlet, DeliveryTrackingComponent],
+  imports: [CommonModule, FormsModule, RouterOutlet, DeliveryTrackingComponent],
   template: `
     <section class="consumer-grid">
       <div class="consumer-main">
