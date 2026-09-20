@@ -2,6 +2,7 @@ package com.fooddelivery.deliveryservice.event;
 
 import com.fooddelivery.deliveryservice.entity.Delivery;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,11 +22,24 @@ public class DeliveryEventPublisher {
 
     public void publish(Delivery delivery, String eventType) {
         String eventId = UUID.randomUUID().toString();
-        kafkaTemplate.send(topic, delivery.getOrderId(), Map.of(
-                "eventId", eventId, "eventType", eventType, "eventVersion", 1,
-                "aggregateId", delivery.getId().toString(), "correlationId", delivery.getOrderId(),
-                "causationId", eventId, "occurredAt", Instant.now().toString(),
-                "data", Map.of("deliveryId", delivery.getId(), "orderId", delivery.getOrderId(),
-                        "driverId", delivery.getDriverId(), "status", delivery.getStatus().name())));
+        // A newly-created delivery is PENDING with no driver yet, so driverId is null here.
+        // Map.of rejects null values, so build the payload with a null-tolerant map.
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("deliveryId", delivery.getId());
+        data.put("orderId", delivery.getOrderId());
+        data.put("driverId", delivery.getDriverId());
+        data.put("status", delivery.getStatus().name());
+
+        Map<String, Object> event = new LinkedHashMap<>();
+        event.put("eventId", eventId);
+        event.put("eventType", eventType);
+        event.put("eventVersion", 1);
+        event.put("aggregateId", delivery.getId().toString());
+        event.put("correlationId", delivery.getOrderId());
+        event.put("causationId", eventId);
+        event.put("occurredAt", Instant.now().toString());
+        event.put("data", data);
+
+        kafkaTemplate.send(topic, delivery.getOrderId(), event);
     }
 }
