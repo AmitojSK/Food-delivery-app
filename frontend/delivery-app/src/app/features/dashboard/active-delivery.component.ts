@@ -130,8 +130,15 @@ export class ActiveDeliveryComponent implements OnInit, OnDestroy {
         latitude: position.coords.latitude,
         longitude: position.coords.longitude
       }).subscribe({ error: err => this.notify.show(err.message) }),
-      error => { this.notify.show(`Location error: ${error.message}`); this.stopSharing(); },
-      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+      error => {
+        this.notify.show(`Location error: ${error.message}`);
+        // Only give up if the user actually denied permission. A transient
+        // POSITION_UNAVAILABLE/TIMEOUT (e.g. while moving, or a DevTools override
+        // change) must NOT stop sharing — watchPosition keeps trying and the next
+        // fix comes through on its own.
+        if (error.code === error.PERMISSION_DENIED) this.stopSharing();
+      },
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 30000 }
     );
     this.sharingId.set(delivery.id);
     this.notify.show('Sharing live location…');
