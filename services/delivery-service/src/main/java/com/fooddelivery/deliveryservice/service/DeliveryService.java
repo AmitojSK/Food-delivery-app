@@ -132,11 +132,17 @@ public class DeliveryService {
             throw new ResourceNotFoundException("Delivery " + id + " has no assigned driver yet");
         }
         DriverLocationCache.DriverLocationView location = driverLocationCache.find(delivery.getDriverId());
-        if (location == null) {
-            throw new ResourceNotFoundException("No recent location reported for delivery " + id);
+        if (location != null) {
+            return new DriverLocationResponse(location.driverId(), location.latitude(), location.longitude(),
+                    location.updatedAt());
         }
-        return new DriverLocationResponse(location.driverId(), location.latitude(), location.longitude(),
-                location.updatedAt());
+        // Cache miss (TTL expired, or Redis down): fall back to the last location persisted on
+        // the delivery itself, so tracking keeps showing the driver's last-known position.
+        if (delivery.getDriverLatitude() != null && delivery.getDriverLongitude() != null) {
+            return new DriverLocationResponse(delivery.getDriverId(), delivery.getDriverLatitude(),
+                    delivery.getDriverLongitude(), delivery.getUpdatedAt());
+        }
+        throw new ResourceNotFoundException("No location reported yet for delivery " + id);
     }
 
     private Delivery findDelivery(Long id) {

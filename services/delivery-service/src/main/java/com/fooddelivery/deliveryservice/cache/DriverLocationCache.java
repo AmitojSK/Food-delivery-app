@@ -1,5 +1,6 @@
 package com.fooddelivery.deliveryservice.cache;
 
+import java.io.Serializable;
 import java.time.Instant;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
@@ -15,7 +16,10 @@ import org.springframework.stereotype.Component;
 @Component
 public class DriverLocationCache {
 
-    public record DriverLocationView(Long driverId, Double latitude, Double longitude, Instant updatedAt) {
+    // Serializable so Spring's Redis cache (JDK serialization) can actually store it —
+    // without this every cache write threw and the cache was permanently empty.
+    public record DriverLocationView(Long driverId, Double latitude, Double longitude, Instant updatedAt)
+            implements Serializable {
     }
 
     @CachePut(cacheNames = "driverLocations", key = "#driverId")
