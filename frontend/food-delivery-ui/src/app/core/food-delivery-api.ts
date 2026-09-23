@@ -92,12 +92,14 @@ export class FoodDeliveryApi {
   // is created only once the order is ready, and a driver location only after the driver
   // is assigned and reports one, so 404s are the normal "not yet" case while polling.
   getDeliveryByOrder(orderId: string): Observable<Delivery | null> {
-    return this.http.get<Delivery>(`/delivery-api/api/v1/deliveries/order/${orderId}`)
+    // These are polled live, so bypass the browser HTTP cache — a stale cached
+    // response would stall tracking (deliveryId never resolves, location never updates).
+    return this.http.get<Delivery>(`/delivery-api/api/v1/deliveries/order/${orderId}`, { params: { _t: Date.now() } })
       .pipe(catchError(() => of(null)));
   }
 
   getDriverLocation(deliveryId: number): Observable<DriverLocation | null> {
-    return this.http.get<DriverLocation>(`/delivery-api/api/v1/deliveries/${deliveryId}/driver-location`)
+    return this.http.get<DriverLocation>(`/delivery-api/api/v1/deliveries/${deliveryId}/driver-location`, { params: { _t: Date.now() } })
       .pipe(catchError(() => of(null)));
   }
 }

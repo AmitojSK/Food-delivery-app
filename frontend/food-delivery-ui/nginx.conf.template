@@ -26,6 +26,11 @@ server {
         proxy_pass ${API_GATEWAY_URL}/order-api/;
     }
 
+    # Live delivery tracking (driver location for the customer's map).
+    location /delivery-api/ {
+        proxy_pass ${API_GATEWAY_URL}/delivery-api/;
+    }
+
     # Server-Sent Events stream for live order updates: disable proxy buffering and
     # keep the upstream connection open so events reach the browser as they happen.
     location /realtime-api/ {
