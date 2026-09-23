@@ -1,13 +1,14 @@
 <main class="app-shell">
   <header class="app-header">
-    <div>
+    <a routerLink="/restaurants" class="brand-link" aria-label="Home">
       <p class="eyebrow">Food delivery</p>
       <h1>Fresh meals</h1>
-    </div>
+    </a>
     @if (auth.isAuthenticated()) {
       <div class="account-actions">
         <span class="user-badge">{{ auth.user()?.firstName }}</span>
         @if (!isAdminRoute()) {
+          <a routerLink="/restaurants"><button class="secondary" type="button">Browse</button></a>
           <a routerLink="/restaurants/my-orders"><button class="secondary" type="button">My Orders</button></a>
         }
         @if (auth.isAdmin()) {

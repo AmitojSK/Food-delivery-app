@@ -213,6 +213,8 @@ label {
 
 .app-header h1 { font-size: 1.35rem; }
 .app-header .eyebrow { margin-bottom: 0.125rem; }
+.brand-link { text-decoration: none; color: inherit; cursor: pointer; display: block; }
+.brand-link:hover h1 { color: var(--brand); }
 
 .account-actions {
   display: flex;
