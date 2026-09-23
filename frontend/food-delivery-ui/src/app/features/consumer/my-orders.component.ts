@@ -4,11 +4,12 @@ import { finalize } from 'rxjs';
 import { FoodDeliveryApi } from '../../core/food-delivery-api';
 import { RealtimeStream } from '../../core/realtime-stream.service';
 import { Order } from '../../core/models';
+import { DeliveryTrackingComponent } from './delivery-tracking.component';
 
 /** The signed-in customer's own order history, newest first, with live status. */
 @Component({
   selector: 'app-my-orders',
-  imports: [CommonModule],
+  imports: [CommonModule, DeliveryTrackingComponent],
   template: `
     <section class="browse">
       <div class="section-heading">
@@ -37,6 +38,9 @@ import { Order } from '../../core/models';
                 <span class="muted">{{ order.createdAt | date: 'medium' }}</span>
                 <strong>{{ order.totalAmount | currency: 'INR' }}</strong>
               </div>
+              @if (statusFor(order) === 'OUT_FOR_DELIVERY') {
+                <app-delivery-tracking [orderId]="order.id" [status]="statusFor(order)" />
+              }
             </article>
           } @empty {
             <div class="empty">
