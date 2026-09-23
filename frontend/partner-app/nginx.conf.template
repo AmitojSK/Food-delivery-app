@@ -6,6 +6,9 @@ server {
 
     proxy_ssl_server_name on;
     proxy_set_header Host $proxy_host;
+    # Forward the real client IP so the gateway can rate-limit per client (not per frontend).
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Real-IP $remote_addr;
 
     location /user-api/ {
         proxy_pass ${API_GATEWAY_URL}/user-api/;

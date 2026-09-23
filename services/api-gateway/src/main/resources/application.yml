@@ -23,8 +23,11 @@ spring:
             - StripPrefix=1
             - name: RequestRateLimiter
               args:
-                redis-rate-limiter.replenishRate: 5
-                redis-rate-limiter.burstCapacity: 10
+                # Generous so normal use/testing never trips it, but still bounded to blunt
+                # credential-stuffing. Keyed per client (see RateLimitKeyResolver + the nginx
+                # X-Forwarded-For forwarding), not globally.
+                redis-rate-limiter.replenishRate: 20
+                redis-rate-limiter.burstCapacity: 60
                 redis-rate-limiter.requestedTokens: 1
                 key-resolver: "#{@rateLimitKeyResolver}"
         - id: user-service
