@@ -55,6 +55,13 @@ public class RateLimitKeyResolver implements KeyResolver {
                 // Falls through to IP-based limiting for an invalid/expired token.
             }
         }
+        // Behind a proxy (Render), getRemoteAddress() is the proxy's IP, which would collapse
+        // every anonymous caller into ONE shared bucket. Prefer the real client IP that the
+        // proxy forwards in X-Forwarded-For (leftmost entry), so login/register limits per client.
+        String forwardedFor = exchange.getRequest().getHeaders().getFirst("X-Forwarded-For");
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+            return forwardedFor.split(",")[0].trim();
+        }
         InetSocketAddress remoteAddress = exchange.getRequest().getRemoteAddress();
         return remoteAddress != null && remoteAddress.getAddress() != null
                 ? remoteAddress.getAddress().getHostAddress() : "unknown";

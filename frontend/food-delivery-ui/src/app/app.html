@@ -8,8 +8,8 @@
       <div class="account-actions">
         <span class="user-badge">{{ auth.user()?.firstName }}</span>
         @if (!isAdminRoute()) {
-          <a routerLink="/restaurants"><button class="secondary" type="button">Browse</button></a>
-          <a routerLink="/restaurants/my-orders"><button class="secondary" type="button">My Orders</button></a>
+          <a routerLink="/restaurants" routerLinkActive="active-nav" [routerLinkActiveOptions]="{ exact: true }"><button class="secondary" type="button">Browse</button></a>
+          <a routerLink="/restaurants/my-orders" routerLinkActive="active-nav"><button class="secondary" type="button">My Orders</button></a>
         }
         @if (auth.isAdmin()) {
           <nav class="mode-switch" aria-label="Workflow">

@@ -215,6 +215,12 @@ label {
 .app-header .eyebrow { margin-bottom: 0.125rem; }
 .brand-link { text-decoration: none; color: inherit; cursor: pointer; display: block; }
 .brand-link:hover h1 { color: var(--brand); }
+/* Highlight the active header nav item (Browse / My Orders). */
+.account-actions .active-nav button {
+  background: var(--brand);
+  color: #fff;
+  border-color: var(--brand);
+}
 
 .account-actions {
   display: flex;
