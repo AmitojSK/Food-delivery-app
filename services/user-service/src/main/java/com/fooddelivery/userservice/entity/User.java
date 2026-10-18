@@ -39,6 +39,11 @@ public class User {
     @Enumerated(EnumType.STRING)
     private AuthProvider authProvider = AuthProvider.LOCAL;
 
+    // The provider's stable user id (Google "sub", GitHub numeric id). Null for LOCAL
+    // accounts. Unique per (auth_provider, provider_id) so a social identity maps to one user.
+    @Column(name = "provider_id", length = 191)
+    private String providerId;
+
     @Column(nullable = false, length = 20)
     @Enumerated(EnumType.STRING)
     private UserRole role = UserRole.CUSTOMER;
@@ -114,6 +119,14 @@ public class User {
 
     public void setAuthProvider(AuthProvider authProvider) {
         this.authProvider = authProvider;
+    }
+
+    public String getProviderId() {
+        return providerId;
+    }
+
+    public void setProviderId(String providerId) {
+        this.providerId = providerId;
     }
 
     public UserRole getRole() {

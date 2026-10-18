@@ -11,6 +11,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -29,16 +30,38 @@ public class SecurityConfig {
                         .disabled(!user.isActive()).build())
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     }
+
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter,
                                             RestAuthenticationEntryPoint authenticationEntryPoint,
-                                            RestAccessDeniedHandler accessDeniedHandler) throws Exception {
-        return http.csrf(csrf -> csrf.disable())
+                                            RestAccessDeniedHandler accessDeniedHandler,
+                                            ClientRegistrationRepository clientRegistrationRepository,
+                                            OAuth2Properties oauth2Properties,
+                                            HttpCookieOAuth2AuthorizationRequestRepository authorizationRequestRepository,
+                                            CustomOAuth2UserService oauth2UserService,
+                                            OAuth2LoginSuccessHandler oauth2SuccessHandler,
+                                            OAuth2LoginFailureHandler oauth2FailureHandler) throws Exception {
+        http.csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(exceptions -> exceptions.authenticationEntryPoint(authenticationEntryPoint)
                         .accessDeniedHandler(accessDeniedHandler))
-                .authorizeHttpRequests(authorize -> authorize.requestMatchers("/api/v1/auth/**", "/actuator/health", "/actuator/info")
+                .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers("/api/v1/auth/**", "/oauth2/**", "/login/oauth2/**",
+                                "/actuator/health", "/actuator/info")
                         .permitAll().anyRequest().authenticated())
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class).build();
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
+        // oauth2Login is wired only when at least one social provider is configured; otherwise the
+        // ClientRegistrationRepository is empty and the service runs login/register only.
+        if (oauth2Properties.getGoogle().isConfigured() || oauth2Properties.getGithub().isConfigured()) {
+            http.oauth2Login(oauth2 -> oauth2
+                    .clientRegistrationRepository(clientRegistrationRepository)
+                    .authorizationEndpoint(endpoint ->
+                            endpoint.authorizationRequestRepository(authorizationRequestRepository))
+                    .userInfoEndpoint(userInfo -> userInfo.userService(oauth2UserService))
+                    .successHandler(oauth2SuccessHandler)
+                    .failureHandler(oauth2FailureHandler));
+        }
+        return http.build();
     }
 }

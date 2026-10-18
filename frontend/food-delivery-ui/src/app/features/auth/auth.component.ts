@@ -1,11 +1,11 @@
-import { AfterViewInit, Component, ElementRef, NgZone, OnInit, ViewChild, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { finalize } from 'rxjs';
 import { AuthSession } from '../../core/auth-session';
 import { FoodDeliveryApi } from '../../core/food-delivery-api';
 import { NotificationService } from '../../core/notification.service';
-import { AuthenticationResponse } from '../../core/models';
+import { AuthenticationResponse, OAuth2Provider } from '../../core/models';
 
 type AuthScreen = 'login' | 'register';
 
@@ -42,86 +42,39 @@ type AuthScreen = 'login' | 'register';
         </form>
       }
 
-      @if (googleEnabled()) {
+      @if (providers().length) {
         <div class="auth-divider"><span>or</span></div>
+        <div class="oauth-buttons">
+          @for (provider of providers(); track provider.id) {
+            <button class="secondary oauth-button" type="button" (click)="startOAuth(provider.id)">
+              Continue with {{ provider.name }}
+            </button>
+          }
+        </div>
       }
-      <div #googleBtn class="google-signin"></div>
     </section>
   `
 })
-export class AuthComponent implements OnInit, AfterViewInit {
+export class AuthComponent implements OnInit {
   private readonly api = inject(FoodDeliveryApi);
   private readonly auth = inject(AuthSession);
   private readonly router = inject(Router);
   protected readonly notifications = inject(NotificationService);
   private readonly fb = inject(FormBuilder);
-  private readonly zone = inject(NgZone);
-
-  @ViewChild('googleBtn') private googleBtn?: ElementRef<HTMLElement>;
 
   protected readonly screen = signal<AuthScreen>('login');
-  protected readonly googleEnabled = signal(false);
-  private clientId = '';
-  private viewReady = false;
+  protected readonly providers = signal<OAuth2Provider[]>([]);
 
   ngOnInit(): void {
-    // The client id is env-driven (served by the backend), so the button only
-    // appears when Google sign-in is actually configured.
-    this.api.googleConfig().subscribe(cfg => {
-      if (cfg.clientId) {
-        this.clientId = cfg.clientId;
-        this.googleEnabled.set(true);
-        this.loadGsiScript().then(() => this.renderGoogleButton());
-      }
-    });
+    // Only providers configured on the backend are returned, so a button appears
+    // only when its provider is actually set up.
+    this.api.oauth2Providers().subscribe(providers => this.providers.set(providers));
   }
 
-  ngAfterViewInit(): void {
-    this.viewReady = true;
-    if (this.googleEnabled()) this.renderGoogleButton();
-  }
-
-  private loadGsiScript(): Promise<void> {
-    const g = (window as any).google;
-    if (g?.accounts?.id) return Promise.resolve();
-    const existing = document.getElementById('google-gsi');
-    if (existing) return new Promise(resolve => existing.addEventListener('load', () => resolve()));
-    return new Promise((resolve, reject) => {
-      const s = document.createElement('script');
-      s.id = 'google-gsi';
-      s.src = 'https://accounts.google.com/gsi/client';
-      s.async = true;
-      s.defer = true;
-      s.onload = () => resolve();
-      s.onerror = () => reject();
-      document.head.appendChild(s);
-    });
-  }
-
-  private renderGoogleButton(): void {
-    const g = (window as any).google;
-    if (!g?.accounts?.id || !this.viewReady || !this.googleBtn) return;
-    g.accounts.id.initialize({
-      client_id: this.clientId,
-      callback: (resp: { credential: string }) => this.onGoogleCredential(resp.credential)
-    });
-    g.accounts.id.renderButton(this.googleBtn.nativeElement, {
-      theme: 'outline', size: 'large', text: 'continue_with', width: 320
-    });
-  }
-
-  private onGoogleCredential(credential: string): void {
-    // GSI's callback fires outside Angular's zone; re-enter so signals update the view.
-    this.zone.run(() => {
-      this.notifications.clearMessages();
-      this.notifications.saving.set(true);
-      this.api.googleSignIn(credential)
-        .pipe(finalize(() => this.notifications.saving.set(false)))
-        .subscribe({
-          next: response => this.completeAuth(response),
-          error: (e: Error) => this.notifications.error.set(e.message || 'Google sign-in failed.')
-        });
-    });
+  // Full-page navigation to the backend's OAuth2 authorization endpoint (same origin,
+  // via the nginx /user-api proxy), which redirects on to the provider.
+  protected startOAuth(providerId: string): void {
+    window.location.href = `/user-api/oauth2/authorization/${providerId}`;
   }
 
   protected readonly loginForm = this.fb.nonNullable.group({

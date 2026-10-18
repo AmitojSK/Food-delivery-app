@@ -2,14 +2,18 @@ package com.fooddelivery.userservice.controller;
 
 import com.fooddelivery.userservice.dto.AuthenticationResponse;
 import com.fooddelivery.userservice.dto.CreateUserRequest;
-import com.fooddelivery.userservice.dto.GoogleConfigResponse;
-import com.fooddelivery.userservice.dto.GoogleSignInRequest;
 import com.fooddelivery.userservice.dto.LoginRequest;
-import com.fooddelivery.userservice.security.GoogleTokenVerifier;
+import com.fooddelivery.userservice.dto.OAuth2ProviderResponse;
 import com.fooddelivery.userservice.service.AuthenticationService;
 import jakarta.validation.Valid;
+import java.util.ArrayList;
+import java.util.List;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.oauth2.client.registration.ClientRegistration;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -21,12 +25,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthenticationController {
 
     private final AuthenticationService authenticationService;
-    private final GoogleTokenVerifier googleTokenVerifier;
+    private final ObjectProvider<ClientRegistrationRepository> clientRegistrationRepository;
 
     public AuthenticationController(AuthenticationService authenticationService,
-                                    GoogleTokenVerifier googleTokenVerifier) {
+                                    ObjectProvider<ClientRegistrationRepository> clientRegistrationRepository) {
         this.authenticationService = authenticationService;
-        this.googleTokenVerifier = googleTokenVerifier;
+        this.clientRegistrationRepository = clientRegistrationRepository;
     }
 
     @PostMapping("/register")
@@ -39,15 +43,21 @@ public class AuthenticationController {
         return ResponseEntity.ok(authenticationService.login(request));
     }
 
-    @PostMapping("/google")
-    public ResponseEntity<AuthenticationResponse> google(@Valid @RequestBody GoogleSignInRequest request) {
-        return ResponseEntity.ok(authenticationService.loginWithGoogle(request.idToken()));
-    }
-
-    // Lets the frontend fetch the public client id (and hide the button when unconfigured),
-    // so the id is env-driven rather than baked into the built app.
-    @GetMapping("/google/config")
-    public ResponseEntity<GoogleConfigResponse> googleConfig() {
-        return ResponseEntity.ok(new GoogleConfigResponse(googleTokenVerifier.clientId()));
+    /**
+     * Lists the social providers that are actually configured, so the SPA shows a button only
+     * for enabled providers. The frontend then starts a flow by navigating to
+     * {@code /user-api/oauth2/authorization/<id>}. Empty when none are configured.
+     */
+    @GetMapping("/oauth2/providers")
+    public ResponseEntity<List<OAuth2ProviderResponse>> oauth2Providers() {
+        List<OAuth2ProviderResponse> providers = new ArrayList<>();
+        ClientRegistrationRepository repository = clientRegistrationRepository.getIfAvailable();
+        if (repository instanceof InMemoryClientRegistrationRepository inMemory) {
+            for (ClientRegistration registration : inMemory) {
+                providers.add(new OAuth2ProviderResponse(registration.getRegistrationId(),
+                        registration.getClientName()));
+            }
+        }
+        return ResponseEntity.ok(providers);
     }
 }

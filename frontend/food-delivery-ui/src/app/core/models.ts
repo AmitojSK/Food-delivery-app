@@ -30,6 +30,11 @@ export interface AuthenticationResponse {
   user: User;
 }
 
+export interface OAuth2Provider {
+  id: string;
+  name: string;
+}
+
 export interface Restaurant {
   id: number;
   name: string;

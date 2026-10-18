@@ -4,6 +4,7 @@ import { adminGuard } from './core/admin.guard';
 
 export const routes: Routes = [
   { path: 'auth', loadComponent: () => import('./features/auth/auth.component').then(m => m.AuthComponent) },
+  { path: 'oauth2/callback', loadComponent: () => import('./features/auth/oauth-callback.component').then(m => m.OAuthCallbackComponent) },
   {
     path: '',
     canActivate: [authGuard],

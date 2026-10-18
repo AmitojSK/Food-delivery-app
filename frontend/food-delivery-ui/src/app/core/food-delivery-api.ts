@@ -12,6 +12,7 @@ import {
   DriverLocation,
   FoodItem,
   LoginRequest,
+  OAuth2Provider,
   Order,
   Restaurant,
   User
@@ -33,16 +34,12 @@ export class FoodDeliveryApi {
       .pipe(catchError(handleApiError));
   }
 
-  googleSignIn(idToken: string): Observable<AuthenticationResponse> {
+  // The social providers that are actually configured on the backend; the UI shows a button
+  // for each. Returns [] on error so the page still works with password sign-in only.
+  oauth2Providers(): Observable<OAuth2Provider[]> {
     return this.http
-      .post<AuthenticationResponse>('/user-api/api/v1/auth/google', { idToken })
-      .pipe(catchError(handleApiError));
-  }
-
-  googleConfig(): Observable<{ clientId: string }> {
-    return this.http
-      .get<{ clientId: string }>('/user-api/api/v1/auth/google/config')
-      .pipe(catchError(() => of({ clientId: '' })));
+      .get<OAuth2Provider[]>('/user-api/api/v1/auth/oauth2/providers')
+      .pipe(catchError(() => of([])));
   }
 
   listUsers(): Observable<User[]> {
