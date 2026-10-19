@@ -38,7 +38,9 @@ export class FoodDeliveryApi {
   // for each. Returns [] on error so the page still works with password sign-in only.
   oauth2Providers(): Observable<OAuth2Provider[]> {
     return this.http
-      .get<OAuth2Provider[]>('/user-api/api/v1/auth/oauth2/providers')
+      // Cache-bust (_t) so an empty [] cached during a cold/unconfigured phase can't be replayed
+      // and keep the buttons hidden after the backend is up and returning providers.
+      .get<OAuth2Provider[]>('/user-api/api/v1/auth/oauth2/providers', { params: { _t: Date.now() } })
       // Retry a few times so a backend that wakes mid-load still populates the buttons
       // instead of silently hiding them; fall back to [] (password sign-in) if it stays down.
       .pipe(retry({ count: 3, delay: () => timer(3000) }), catchError(() => of([])));
