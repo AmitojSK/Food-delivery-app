@@ -41,15 +41,24 @@ export class FoodDeliveryApi {
       // Cache-bust (_t) so an empty [] cached during a cold/unconfigured phase can't be replayed
       // and keep the buttons hidden after the backend is up and returning providers.
       .get<OAuth2Provider[]>('/user-api/api/v1/auth/oauth2/providers', { params: { _t: Date.now() } })
-      // Retry only a cold backend (5xx / no-connection / timeout), so a backend that wakes
-      // mid-load still populates the buttons. NEVER retry a 4xx — especially 429 — since
-      // retrying a rate-limited response just digs the bucket deeper. The error is propagated
-      // (not swallowed) so the caller can show a status-specific message instead of hiding.
       .pipe(retry({
         count: 3,
-        delay: (error: unknown) => {
+        delay: (error: unknown, retryCount: number) => {
           const status = error instanceof HttpErrorResponse ? error.status : 0;
-          if (status === 0 || status >= 500) return timer(3000);
+          // Cold backend (5xx / no-connection / timeout): quick retry so a waking service self-heals.
+          if (status === 0 || status >= 500) {
+            return timer(3000);
+          }
+          // Rate limited: wait out the cooldown and retry ONCE per step, well-spaced — honour the
+          // server's Retry-After if present, else exponential backoff (5s, 10s, 20s). This never
+          // becomes a tight loop (which is what drains the bucket); after ~3 spaced tries it gives
+          // up and the caller shows a Retry button. So a short 429 self-heals without a click.
+          if (status === 429) {
+            const retryAfterMs = parseRetryAfter(error);
+            const backoffMs = Math.min(20_000, 5_000 * 2 ** (retryCount - 1));
+            return timer(retryAfterMs ?? backoffMs);
+          }
+          // Other 4xx: retrying can't help — propagate so the caller shows a message, not a spinner.
           throw error;
         }
       }));
@@ -112,6 +121,18 @@ export class FoodDeliveryApi {
     return this.http.get<DriverLocation>(`/delivery-api/api/v1/deliveries/${deliveryId}/driver-location`, { params: { _t: Date.now() } })
       .pipe(catchError(() => of(null)));
   }
+}
+
+// Reads a 429's Retry-After header (seconds or an HTTP-date), in ms, capped at 20s so the UI
+// never blocks too long; null when absent/unparseable (caller falls back to exponential backoff).
+function parseRetryAfter(error: unknown): number | null {
+  if (!(error instanceof HttpErrorResponse)) return null;
+  const header = error.headers?.get('Retry-After');
+  if (!header) return null;
+  const seconds = Number(header);
+  if (!Number.isNaN(seconds)) return Math.min(20_000, Math.max(0, seconds) * 1000);
+  const dateMs = Date.parse(header);
+  return Number.isNaN(dateMs) ? null : Math.min(20_000, Math.max(0, dateMs - Date.now()));
 }
 
 function handleApiError(error: HttpErrorResponse): Observable<never> {

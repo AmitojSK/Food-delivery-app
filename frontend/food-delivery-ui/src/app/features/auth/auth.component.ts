@@ -44,14 +44,16 @@ type AuthScreen = 'login' | 'register';
         </form>
       }
 
-      @if (providers().length || providerState() === 'error') {
+      @if (providers().length || providerState() !== 'ready') {
         <div class="auth-divider"><span>or</span></div>
       }
 
-      @if (providerState() === 'error') {
+      @if (providerState() === 'loading') {
+        <p class="provider-note">Loading sign-in options…</p>
+      } @else if (providerState() === 'error') {
         <p class="provider-note">
           {{ providerError() }}
-          <button class="warmup-link" type="button" (click)="reloadProviders()" [disabled]="providerState() === 'loading'">Retry</button>
+          <button class="warmup-link" type="button" (click)="reloadProviders()">Retry</button>
         </p>
       }
 
