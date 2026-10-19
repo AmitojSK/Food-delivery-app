@@ -83,18 +83,19 @@ type AuthScreen = 'login' | 'register';
       }
 
       <div class="warmup">
-        @if (warmUp.status() === 'ready') {
-          <span class="warmup-ready">✓ Services are awake</span>
+        @if (warmUp.status() === 'warming') {
+          <button class="warmup-link" type="button" disabled>Waking services… {{ warmUp.ready() }}/{{ warmUp.total() }}</button>
+          <p class="warmup-hint muted">Free-tier services sleep when idle; waking can take up to a minute.</p>
+        } @else if (warmUp.status() === 'ready') {
+          <!-- Don't claim "awake" when a provider fetch is erroring (e.g. rate-limited) — the
+               provider message above already explains what to do. -->
+          @if (providerState() !== 'error') {
+            <span class="warmup-ready">✓ Services are awake</span>
+          }
         } @else {
-          <button class="warmup-link" type="button" (click)="wake()" [disabled]="warmUp.status() === 'warming'">
-            @if (warmUp.status() === 'warming') {
-              Waking services… {{ warmUp.ready() }}/{{ warmUp.total() }}
-            } @else {
-              Services asleep? Wake them
-            }
-          </button>
+          <button class="warmup-link" type="button" (click)="wake()">Services asleep? Wake them</button>
+          <p class="warmup-hint muted">Free-tier services sleep when idle; waking can take up to a minute.</p>
         }
-        <p class="warmup-hint muted">Free-tier services sleep when idle; waking can take up to a minute.</p>
       </div>
     </section>
   `
