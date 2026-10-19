@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -43,8 +44,18 @@ type AuthScreen = 'login' | 'register';
         </form>
       }
 
-      @if (providers().length) {
+      @if (providers().length || providerState() === 'error') {
         <div class="auth-divider"><span>or</span></div>
+      }
+
+      @if (providerState() === 'error') {
+        <p class="provider-note">
+          {{ providerError() }}
+          <button class="warmup-link" type="button" (click)="reloadProviders()" [disabled]="providerState() === 'loading'">Retry</button>
+        </p>
+      }
+
+      @if (providers().length) {
         <div class="oauth-buttons">
           @for (provider of providers(); track provider.id) {
             <button class="oauth-button" type="button" (click)="startOAuth(provider.id)">
@@ -98,15 +109,43 @@ export class AuthComponent implements OnInit {
 
   protected readonly screen = signal<AuthScreen>('login');
   protected readonly providers = signal<OAuth2Provider[]>([]);
+  protected readonly providerState = signal<'loading' | 'ready' | 'error'>('loading');
+  protected readonly providerError = signal('');
 
   ngOnInit(): void {
     this.loadProviders();
   }
 
-  // Only providers configured on the backend are returned, so a button appears
-  // only when its provider is actually set up.
+  // Only providers configured on the backend are returned, so a button appears only when its
+  // provider is actually set up. On failure we surface a status-specific message (rather than
+  // silently hiding the options) so the user knows whether to wait, warm up, or retry.
   private loadProviders(): void {
-    this.api.oauth2Providers().subscribe(providers => this.providers.set(providers));
+    this.providerState.set('loading');
+    this.api.oauth2Providers().subscribe({
+      next: providers => {
+        this.providers.set(providers);
+        this.providerState.set('ready');
+      },
+      error: (error: HttpErrorResponse) => {
+        this.providers.set([]);
+        this.providerError.set(this.describeProviderError(error));
+        this.providerState.set('error');
+      }
+    });
+  }
+
+  protected reloadProviders(): void {
+    this.loadProviders();
+  }
+
+  private describeProviderError(error: HttpErrorResponse): string {
+    if (error.status === 429) {
+      return 'Too many requests right now. Wait a few seconds, then retry.';
+    }
+    if (error.status === 0 || error.status >= 500) {
+      return 'Sign-in options are waking up. Tap “Wake services”, then retry.';
+    }
+    return 'Social sign-in is temporarily unavailable.';
   }
 
   // Wakes the sleeping free-tier backends, then re-checks providers so the social

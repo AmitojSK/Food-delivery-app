@@ -41,9 +41,18 @@ export class FoodDeliveryApi {
       // Cache-bust (_t) so an empty [] cached during a cold/unconfigured phase can't be replayed
       // and keep the buttons hidden after the backend is up and returning providers.
       .get<OAuth2Provider[]>('/user-api/api/v1/auth/oauth2/providers', { params: { _t: Date.now() } })
-      // Retry a few times so a backend that wakes mid-load still populates the buttons
-      // instead of silently hiding them; fall back to [] (password sign-in) if it stays down.
-      .pipe(retry({ count: 3, delay: () => timer(3000) }), catchError(() => of([])));
+      // Retry only a cold backend (5xx / no-connection / timeout), so a backend that wakes
+      // mid-load still populates the buttons. NEVER retry a 4xx — especially 429 — since
+      // retrying a rate-limited response just digs the bucket deeper. The error is propagated
+      // (not swallowed) so the caller can show a status-specific message instead of hiding.
+      .pipe(retry({
+        count: 3,
+        delay: (error: unknown) => {
+          const status = error instanceof HttpErrorResponse ? error.status : 0;
+          if (status === 0 || status >= 500) return timer(3000);
+          throw error;
+        }
+      }));
   }
 
   listUsers(): Observable<User[]> {
