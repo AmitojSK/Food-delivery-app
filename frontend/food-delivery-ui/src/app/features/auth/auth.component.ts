@@ -5,6 +5,7 @@ import { finalize } from 'rxjs';
 import { AuthSession } from '../../core/auth-session';
 import { FoodDeliveryApi } from '../../core/food-delivery-api';
 import { NotificationService } from '../../core/notification.service';
+import { WarmUpService } from '../../core/warm-up.service';
 import { AuthenticationResponse, OAuth2Provider } from '../../core/models';
 
 type AuthScreen = 'login' | 'register';
@@ -69,6 +70,21 @@ type AuthScreen = 'login' | 'register';
           }
         </div>
       }
+
+      <div class="warmup">
+        @if (warmUp.status() === 'ready') {
+          <span class="warmup-ready">✓ Services are awake</span>
+        } @else {
+          <button class="warmup-link" type="button" (click)="wake()" [disabled]="warmUp.status() === 'warming'">
+            @if (warmUp.status() === 'warming') {
+              Waking services… {{ warmUp.ready() }}/{{ warmUp.total() }}
+            } @else {
+              Services asleep? Wake them
+            }
+          </button>
+        }
+        <p class="warmup-hint muted">Free-tier services sleep when idle; waking can take up to a minute.</p>
+      </div>
     </section>
   `
 })
@@ -77,15 +93,26 @@ export class AuthComponent implements OnInit {
   private readonly auth = inject(AuthSession);
   private readonly router = inject(Router);
   protected readonly notifications = inject(NotificationService);
+  protected readonly warmUp = inject(WarmUpService);
   private readonly fb = inject(FormBuilder);
 
   protected readonly screen = signal<AuthScreen>('login');
   protected readonly providers = signal<OAuth2Provider[]>([]);
 
   ngOnInit(): void {
-    // Only providers configured on the backend are returned, so a button appears
-    // only when its provider is actually set up.
+    this.loadProviders();
+  }
+
+  // Only providers configured on the backend are returned, so a button appears
+  // only when its provider is actually set up.
+  private loadProviders(): void {
     this.api.oauth2Providers().subscribe(providers => this.providers.set(providers));
+  }
+
+  // Wakes the sleeping free-tier backends, then re-checks providers so the social
+  // buttons appear without a manual reload once the backend is up.
+  protected wake(): void {
+    this.warmUp.warmUp().subscribe(() => this.loadProviders());
   }
 
   // Full-page navigation to the backend's OAuth2 authorization endpoint (same origin,

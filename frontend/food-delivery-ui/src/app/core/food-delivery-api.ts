@@ -1,6 +1,6 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, of, throwError } from 'rxjs';
+import { Observable, catchError, of, retry, throwError, timer } from 'rxjs';
 import {
   ApiErrorResponse,
   AuthenticationResponse,
@@ -39,7 +39,9 @@ export class FoodDeliveryApi {
   oauth2Providers(): Observable<OAuth2Provider[]> {
     return this.http
       .get<OAuth2Provider[]>('/user-api/api/v1/auth/oauth2/providers')
-      .pipe(catchError(() => of([])));
+      // Retry a few times so a backend that wakes mid-load still populates the buttons
+      // instead of silently hiding them; fall back to [] (password sign-in) if it stays down.
+      .pipe(retry({ count: 3, delay: () => timer(3000) }), catchError(() => of([])));
   }
 
   listUsers(): Observable<User[]> {
