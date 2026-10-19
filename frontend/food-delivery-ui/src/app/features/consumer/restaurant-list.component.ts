@@ -1,7 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { DataStore } from '../../core/data-store.service';
-import { WarmUpService } from '../../core/warm-up.service';
 import { Restaurant } from '../../core/models';
 import { restaurantImageUrl, swapToFallback } from '../../core/food-images';
 import { RoleNudgeComponent } from './role-nudge.component';
@@ -21,19 +20,21 @@ import { RoleNudgeComponent } from './role-nudge.component';
 
       @switch (store.browseState()) {
         @case ('loading') {
-          <div class="loading-inline"><span class="spinner"></span> Loading restaurants…</div>
+          <div class="loading-inline">
+            <span class="spinner"></span> Waking the kitchen… this can take up to a minute on the free tier.
+          </div>
         }
         @case ('error') {
           <div class="empty cold-start">
-            <h3>Our kitchen is warming up</h3>
-            <p>These demo services sleep on the free tier. Wake them, then retry — it can take up to a minute.</p>
+            @if (store.browseBusy()) {
+              <h3>We're a bit busy right now</h3>
+              <p>Too many requests in a short time — wait a few seconds, then try again.</p>
+            } @else {
+              <h3>Couldn't reach our kitchen</h3>
+              <p>The demo services may be asleep. Try again — waking them can take up to a minute.</p>
+            }
             <div class="cold-actions">
-              @if (warmUp.status() === 'warming') {
-                <button type="button" disabled>Waking services… {{ warmUp.ready() }}/{{ warmUp.total() }}</button>
-              } @else {
-                <button type="button" (click)="wakeAndReload()">Wake services</button>
-              }
-              <button class="secondary" type="button" (click)="reload()">Retry</button>
+              <button type="button" (click)="reload()">Try again</button>
             </div>
           </div>
         }
@@ -66,7 +67,6 @@ import { RoleNudgeComponent } from './role-nudge.component';
 })
 export class RestaurantListComponent {
   protected readonly store = inject(DataStore);
-  protected readonly warmUp = inject(WarmUpService);
 
   protected imageFor(restaurant: Restaurant): string {
     return restaurantImageUrl(restaurant, this.store.foodItems());
@@ -76,12 +76,8 @@ export class RestaurantListComponent {
     swapToFallback(event, label);
   }
 
+  // Re-run the catalogue load; it retries while the backend wakes, so this doubles as "wake + load".
   protected reload(): void {
     this.store.loadBrowse();
-  }
-
-  // Wake the sleeping free-tier backends, then re-load the catalogue once they respond.
-  protected wakeAndReload(): void {
-    this.warmUp.warmUp().subscribe(() => this.store.loadBrowse());
   }
 }
