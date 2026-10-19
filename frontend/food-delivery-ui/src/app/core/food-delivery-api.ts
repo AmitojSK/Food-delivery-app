@@ -1,6 +1,6 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, of, retry, throwError, timer } from 'rxjs';
+import { Observable, catchError, of, retry, tap, throwError, timer } from 'rxjs';
 import {
   ApiErrorResponse,
   AuthenticationResponse,
@@ -37,9 +37,15 @@ export class FoodDeliveryApi {
   // The social providers that are actually configured on the backend; the UI shows a button
   // for each. Returns [] on error so the page still works with password sign-in only.
   oauth2Providers(): Observable<OAuth2Provider[]> {
+    // The provider list is static config — fetch it at most once per session and reuse it, so
+    // repeated page loads don't re-hit the endpoint (which is what runs into the edge's rate
+    // limiting). Once a fetch succeeds, reloads serve from the cache with no network call.
+    const cached = readCachedProviders();
+    if (cached) {
+      return of(cached);
+    }
     return this.http
-      // Cache-bust (_t) so an empty [] cached during a cold/unconfigured phase can't be replayed
-      // and keep the buttons hidden after the backend is up and returning providers.
+      // Cache-bust (_t) belt-and-suspenders against a stale [] (the backend also sends no-store).
       .get<OAuth2Provider[]>('/user-api/api/v1/auth/oauth2/providers', { params: { _t: Date.now() } })
       .pipe(retry({
         count: 3,
@@ -61,7 +67,7 @@ export class FoodDeliveryApi {
           // Other 4xx: retrying can't help — propagate so the caller shows a message, not a spinner.
           throw error;
         }
-      }));
+      }), tap(list => writeCachedProviders(list)));
   }
 
   listUsers(): Observable<User[]> {
@@ -120,6 +126,30 @@ export class FoodDeliveryApi {
   getDriverLocation(deliveryId: number): Observable<DriverLocation | null> {
     return this.http.get<DriverLocation>(`/delivery-api/api/v1/deliveries/${deliveryId}/driver-location`, { params: { _t: Date.now() } })
       .pipe(catchError(() => of(null)));
+  }
+}
+
+// Per-session cache of the (static) social-provider list, so reloads don't re-hit the endpoint.
+const PROVIDERS_CACHE_KEY = 'food-delivery-oauth-providers';
+const PROVIDERS_CACHE_TTL_MS = 10 * 60 * 1000; // 10 min
+
+function readCachedProviders(): OAuth2Provider[] | null {
+  try {
+    const raw = sessionStorage.getItem(PROVIDERS_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { ts?: number; list?: OAuth2Provider[] };
+    if (typeof parsed.ts !== 'number' || Date.now() - parsed.ts > PROVIDERS_CACHE_TTL_MS) return null;
+    return Array.isArray(parsed.list) ? parsed.list : null;
+  } catch {
+    return null; // private mode / blocked storage — just skip the cache
+  }
+}
+
+function writeCachedProviders(list: OAuth2Provider[]): void {
+  try {
+    sessionStorage.setItem(PROVIDERS_CACHE_KEY, JSON.stringify({ ts: Date.now(), list }));
+  } catch {
+    // storage unavailable/full — caching is best-effort, ignore
   }
 }
 
