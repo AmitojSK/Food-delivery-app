@@ -39,9 +39,10 @@ export class WarmUpService {
     const probes = this.targets.map(url =>
       this.http.get(url, { responseType: 'text' }).pipe(
         timeout(20000),
-        retry({ count: 20, delay: error => this.retryWhileCold(error) }),
-        // Any HTTP response (200, or the gateway's 401 for a secured path) means the service is
-        // up; only a gateway 5xx / no-connection / timeout is "still cold" and keeps retrying.
+        // Only a 2xx from the backend's health endpoint counts as awake. Everything else — the
+        // gateway's 401 (path not yet public / request refused), a 5xx, no connection, or a
+        // timeout — means not-ready-yet, so keep retrying.
+        retry({ count: 20, delay: error => this.retryWhileNotReady(error) }),
         catchError(() => of(null)),
         finalize(() => this.ready.update(count => count + 1))
       )
@@ -53,13 +54,13 @@ export class WarmUpService {
     );
   }
 
-  // Retry (after 5s) only while the instance is unreachable through the gateway: a 502/503/504,
-  // no connection (status 0), or our per-attempt timeout. A real HTTP status — including the
-  // gateway's 401 on a secured health path — means it's awake, so we stop and treat it as done.
-  private retryWhileCold(error: unknown): Observable<number> {
+  // A 2xx completes the probe (awake). Retry (after 5s) on anything that means "not ready":
+  // the gateway's 401 (health not public yet / refused), a 5xx, no connection (status 0), or a
+  // per-attempt timeout. Any other status (e.g. 404) stops — retrying it would never succeed.
+  private retryWhileNotReady(error: unknown): Observable<number> {
     const status = error instanceof HttpErrorResponse ? error.status : undefined;
     const timedOut = (error as { name?: string })?.name === 'TimeoutError';
-    if (timedOut || status === 0 || status === 502 || status === 503 || status === 504) {
+    if (timedOut || status === 0 || status === 401 || status === 502 || status === 503 || status === 504) {
       return timer(5000);
     }
     throw error;

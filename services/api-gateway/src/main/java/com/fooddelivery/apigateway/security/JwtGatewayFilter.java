@@ -46,8 +46,17 @@ public class JwtGatewayFilter implements GlobalFilter, Ordered {
 
     private boolean isPublic(ServerWebExchange exchange) {
         String path = exchange.getRequest().getPath().value();
+        // Public without a JWT:
+        //  - the gateway's own health/info, and each backend's health/info (so the UI
+        //    "wake services" warm-up can reach and wake a cold instance);
+        //  - the auth endpoints (login/register/oauth2 providers);
+        //  - the OAuth2 social-login redirect + callback endpoints (the browser hits these
+        //    before it has a token; user-service drives the flow and issues our JWT).
         if (path.equals("/actuator/health") || path.equals("/actuator/info")
-                || path.startsWith("/user-api/api/v1/auth/")) {
+                || path.endsWith("-api/actuator/health") || path.endsWith("-api/actuator/info")
+                || path.startsWith("/user-api/api/v1/auth/")
+                || path.startsWith("/user-api/oauth2/")
+                || path.startsWith("/user-api/login/oauth2/")) {
             return true;
         }
         return exchange.getRequest().getMethod() == HttpMethod.GET
