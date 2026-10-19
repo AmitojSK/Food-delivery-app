@@ -170,7 +170,7 @@ services:
       USER_SERVICE_DB_USERNAME: user_service
       USER_SERVICE_DB_PASSWORD: user_service_password
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-server:8761/eureka/
-      JWT_SECRET: ${JWT_SECRET:-c3ByaW5nLWJvb3QtdXNlci1zZXJ2aWNlLWxvY2FsLWRldmVsb3BtZW50LXNlY3JldC0yMDI2}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env - see .env.example}
       OTLP_TRACING_ENDPOINT: http://tempo:4318/v1/traces
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -197,7 +197,7 @@ services:
       RESTAURANT_SERVICE_DB_USERNAME: restaurant_service
       RESTAURANT_SERVICE_DB_PASSWORD: restaurant_service_password
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-server:8761/eureka/
-      JWT_SECRET: ${JWT_SECRET:-c3ByaW5nLWJvb3QtdXNlci1zZXJ2aWNlLWxvY2FsLWRldmVsb3BtZW50LXNlY3JldC0yMDI2}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env - see .env.example}
       OTLP_TRACING_ENDPOINT: http://tempo:4318/v1/traces
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     ports:
@@ -221,7 +221,7 @@ services:
       FOOD_CATALOGUE_SERVICE_DB_USERNAME: food_catalogue_service
       FOOD_CATALOGUE_SERVICE_DB_PASSWORD: food_catalogue_service_password
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-server:8761/eureka/
-      JWT_SECRET: ${JWT_SECRET:-c3ByaW5nLWJvb3QtdXNlci1zZXJ2aWNlLWxvY2FsLWRldmVsb3BtZW50LXNlY3JldC0yMDI2}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env - see .env.example}
       OTLP_TRACING_ENDPOINT: http://tempo:4318/v1/traces
     ports:
       - "8083:8083"
@@ -244,7 +244,7 @@ services:
     environment:
       ORDER_SERVICE_MONGODB_URI: mongodb://order_service:order_service_password@order-service-mongodb:27017/order_service_db?authSource=admin&replicaSet=rs0
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-server:8761/eureka/
-      JWT_SECRET: ${JWT_SECRET:-c3ByaW5nLWJvb3QtdXNlci1zZXJ2aWNlLWxvY2FsLWRldmVsb3BtZW50LXNlY3JldC0yMDI2}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env - see .env.example}
       OTLP_TRACING_ENDPOINT: http://tempo:4318/v1/traces
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     ports:
@@ -272,7 +272,7 @@ services:
       DELIVERY_SERVICE_DB_USERNAME: delivery_service
       DELIVERY_SERVICE_DB_PASSWORD: delivery_service_password
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-server:8761/eureka/
-      JWT_SECRET: ${JWT_SECRET:-c3ByaW5nLWJvb3QtdXNlci1zZXJ2aWNlLWxvY2FsLWRldmVsb3BtZW50LXNlY3JldC0yMDI2}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env - see .env.example}
       OTLP_TRACING_ENDPOINT: http://tempo:4318/v1/traces
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       REDIS_HOST: redis
@@ -296,7 +296,7 @@ services:
         condition: service_healthy
     environment:
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-server:8761/eureka/
-      JWT_SECRET: ${JWT_SECRET:-c3ByaW5nLWJvb3QtdXNlci1zZXJ2aWNlLWxvY2FsLWRldmVsb3BtZW50LXNlY3JldC0yMDI2}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env - see .env.example}
       OTLP_TRACING_ENDPOINT: http://tempo:4318/v1/traces
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     ports:
@@ -329,7 +329,7 @@ services:
         condition: service_healthy
     environment:
       EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE: http://discovery-server:8761/eureka/
-      JWT_SECRET: ${JWT_SECRET:-c3ByaW5nLWJvb3QtdXNlci1zZXJ2aWNlLWxvY2FsLWRldmVsb3BtZW50LXNlY3JldC0yMDI2}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env - see .env.example}
       OTLP_TRACING_ENDPOINT: http://tempo:4318/v1/traces
       REDIS_HOST: redis
       REDIS_PORT: 6379

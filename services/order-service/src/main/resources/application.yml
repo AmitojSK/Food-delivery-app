@@ -81,7 +81,7 @@ eureka:
 
 security:
   jwt:
-    secret: ${JWT_SECRET:c3ByaW5nLWJvb3QtdXNlci1zZXJ2aWNlLWxvY2FsLWRldmVsb3BtZW50LXNlY3JldC0yMDI2}
+    secret: ${JWT_SECRET}
 
 app:
   kafka:

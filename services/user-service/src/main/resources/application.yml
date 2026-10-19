@@ -66,8 +66,10 @@ eureka:
 
 security:
   jwt:
-    # Supply a distinct, Base64-encoded 256-bit secret outside local development.
-    secret: ${JWT_SECRET:c3ByaW5nLWJvb3QtdXNlci1zZXJ2aWNlLWxvY2FsLWRldmVsb3BtZW50LXNlY3JldC0yMDI2}
+    # Required, no default: the app fails to start unless JWT_SECRET is provided (a real random
+    # Base64-encoded 256-bit key). Local dev reads it from the gitignored .env (see .env.example);
+    # deployed environments inject it as a platform env var. Never commit a real secret.
+    secret: ${JWT_SECRET}
     expiration: ${JWT_EXPIRATION:3600000}
   bootstrap-admin:
     enabled: ${BOOTSTRAP_ADMIN_ENABLED:false}
