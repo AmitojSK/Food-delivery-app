@@ -1,5 +1,5 @@
 import { Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { RouterLink, RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
@@ -14,7 +14,7 @@ import { DeliveryTrackingComponent } from './delivery-tracking.component';
 
 @Component({
   selector: 'app-consumer-layout',
-  imports: [CommonModule, FormsModule, RouterOutlet, DeliveryTrackingComponent],
+  imports: [CommonModule, FormsModule, RouterLink, RouterOutlet, DeliveryTrackingComponent],
   template: `
     <section class="consumer-grid">
       <div class="consumer-main">
@@ -53,13 +53,20 @@ import { DeliveryTrackingComponent } from './delivery-tracking.component';
           <strong>{{ cart.subtotal() | currency: 'INR' }}</strong>
         </div>
 
-        <form class="checkout" (ngSubmit)="placeOrder()">
-          <p class="muted">Ordering as {{ auth.user()?.firstName }} {{ auth.user()?.lastName }}</p>
-          <input required placeholder="Delivery address" [value]="deliveryAddress()" (input)="deliveryAddress.set($any($event.target).value)">
-          <input required placeholder="Contact name" [value]="contactName()" (input)="contactName.set($any($event.target).value)">
-          <input required placeholder="Contact phone" [value]="contactPhone()" (input)="contactPhone.set($any($event.target).value)">
-          <button type="submit" [disabled]="notifications.saving() || cart.items().length === 0">Place Order</button>
-        </form>
+        @if (auth.isAuthenticated()) {
+          <form class="checkout" (ngSubmit)="placeOrder()">
+            <p class="muted">Ordering as {{ auth.user()?.firstName }} {{ auth.user()?.lastName }}</p>
+            <input required placeholder="Delivery address" [value]="deliveryAddress()" (input)="deliveryAddress.set($any($event.target).value)">
+            <input required placeholder="Contact name" [value]="contactName()" (input)="contactName.set($any($event.target).value)">
+            <input required placeholder="Contact phone" [value]="contactPhone()" (input)="contactPhone.set($any($event.target).value)">
+            <button type="submit" [disabled]="notifications.saving() || cart.items().length === 0">Place Order</button>
+          </form>
+        } @else {
+          <div class="checkout-signin">
+            <p class="muted">Browse freely — sign in when you're ready to order.</p>
+            <a routerLink="/auth"><button type="button" [disabled]="cart.items().length === 0">Sign in to place your order</button></a>
+          </div>
+        }
 
         @if (placedOrder(); as order) {
           <div class="confirmation">
@@ -119,15 +126,10 @@ export class ConsumerLayoutComponent implements OnInit, OnDestroy {
     if (user) {
       this.contactName.set(`${user.firstName} ${user.lastName}`);
       this.contactPhone.set(user.phoneNumber ?? '');
+      // The SSE stream needs a JWT; only connect for signed-in users (anonymous browse has none).
+      this.stream.connect();
     }
-    this.stream.connect();
-    this.notifications.loading.set(true);
-    this.store.loadPublicData()
-      .pipe(finalize(() => this.notifications.loading.set(false)))
-      .subscribe(({ restaurants, foodItems }) => {
-        this.store.restaurants.set(restaurants);
-        this.store.foodItems.set(foodItems);
-      });
+    this.store.loadBrowse();
   }
 
   ngOnDestroy(): void {

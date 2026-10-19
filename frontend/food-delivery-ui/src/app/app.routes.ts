@@ -6,31 +6,28 @@ export const routes: Routes = [
   { path: 'auth', loadComponent: () => import('./features/auth/auth.component').then(m => m.AuthComponent) },
   { path: 'oauth2/callback', loadComponent: () => import('./features/auth/oauth-callback.component').then(m => m.OAuthCallbackComponent) },
   {
-    path: '',
-    canActivate: [authGuard],
+    // Browsing restaurants + menus is public (the catalogue is public data); only placing/viewing
+    // orders needs an account. So the layout and the two browse routes carry no guard — just
+    // My Orders does. Checkout prompts anonymous users to sign in.
+    path: 'restaurants',
+    loadComponent: () => import('./features/consumer/consumer-layout.component').then(m => m.ConsumerLayoutComponent),
     children: [
-      {
-        path: 'restaurants',
-        loadComponent: () => import('./features/consumer/consumer-layout.component').then(m => m.ConsumerLayoutComponent),
-        children: [
-          { path: '', loadComponent: () => import('./features/consumer/restaurant-list.component').then(m => m.RestaurantListComponent) },
-          { path: 'my-orders', loadComponent: () => import('./features/consumer/my-orders.component').then(m => m.MyOrdersComponent) },
-          { path: ':id/menu', loadComponent: () => import('./features/consumer/menu.component').then(m => m.MenuComponent) }
-        ]
-      },
-      {
-        path: 'admin',
-        canActivate: [adminGuard],
-        loadComponent: () => import('./features/admin/admin-layout.component').then(m => m.AdminLayoutComponent),
-        children: [
-          { path: '', redirectTo: 'users', pathMatch: 'full' },
-          { path: 'users', loadComponent: () => import('./features/admin/admin-users.component').then(m => m.AdminUsersComponent) },
-          { path: 'restaurants', loadComponent: () => import('./features/admin/admin-restaurants.component').then(m => m.AdminRestaurantsComponent) },
-          { path: 'catalogue', loadComponent: () => import('./features/admin/admin-catalogue.component').then(m => m.AdminCatalogueComponent) },
-          { path: 'orders', loadComponent: () => import('./features/admin/admin-orders.component').then(m => m.AdminOrdersComponent) }
-        ]
-      },
-      { path: '', redirectTo: 'restaurants', pathMatch: 'full' }
+      { path: '', loadComponent: () => import('./features/consumer/restaurant-list.component').then(m => m.RestaurantListComponent) },
+      { path: 'my-orders', canActivate: [authGuard], loadComponent: () => import('./features/consumer/my-orders.component').then(m => m.MyOrdersComponent) },
+      { path: ':id/menu', loadComponent: () => import('./features/consumer/menu.component').then(m => m.MenuComponent) }
     ]
-  }
+  },
+  {
+    path: 'admin',
+    canActivate: [authGuard, adminGuard],
+    loadComponent: () => import('./features/admin/admin-layout.component').then(m => m.AdminLayoutComponent),
+    children: [
+      { path: '', redirectTo: 'users', pathMatch: 'full' },
+      { path: 'users', loadComponent: () => import('./features/admin/admin-users.component').then(m => m.AdminUsersComponent) },
+      { path: 'restaurants', loadComponent: () => import('./features/admin/admin-restaurants.component').then(m => m.AdminRestaurantsComponent) },
+      { path: 'catalogue', loadComponent: () => import('./features/admin/admin-catalogue.component').then(m => m.AdminCatalogueComponent) },
+      { path: 'orders', loadComponent: () => import('./features/admin/admin-orders.component').then(m => m.AdminOrdersComponent) }
+    ]
+  },
+  { path: '', redirectTo: 'restaurants', pathMatch: 'full' }
 ];

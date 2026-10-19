@@ -12,10 +12,25 @@ export class DataStore {
   readonly users = signal<User[]>([]);
   readonly orders = signal<Order[]>([]);
 
-  loadPublicData(): Observable<{ restaurants: Restaurant[]; foodItems: FoodItem[] }> {
-    return forkJoin({
-      restaurants: this.api.listRestaurants().pipe(catchError(() => of([]))),
-      foodItems: this.api.listFoodItems().pipe(catchError(() => of([])))
+  // Browse (public catalogue) load state, so the restaurant list can tell a genuinely empty
+  // catalogue apart from a cold/unreachable backend and show a "services waking up" panel.
+  readonly browseState = signal<'loading' | 'ready' | 'error'>('loading');
+
+  /** Loads the public catalogue (restaurants + menu items) and tracks state for the UI. */
+  loadBrowse(): void {
+    this.browseState.set('loading');
+    forkJoin({
+      // restaurants is the critical call — if it fails (cold/5xx/429), surface the cold-start state.
+      restaurants: this.api.listRestaurants(),
+      // menu items are only used for imagery, so a failure there shouldn't block the page.
+      foodItems: this.api.listFoodItems().pipe(catchError(() => of([] as FoodItem[])))
+    }).subscribe({
+      next: ({ restaurants, foodItems }) => {
+        this.restaurants.set(restaurants);
+        this.foodItems.set(foodItems);
+        this.browseState.set('ready');
+      },
+      error: () => this.browseState.set('error')
     });
   }
 

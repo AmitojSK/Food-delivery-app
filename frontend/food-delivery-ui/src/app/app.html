@@ -19,6 +19,11 @@
         }
         <button class="secondary" type="button" (click)="logout()">Sign out</button>
       </div>
+    } @else {
+      <div class="account-actions">
+        <a routerLink="/restaurants" routerLinkActive="active-nav" [routerLinkActiveOptions]="{ exact: true }"><button class="secondary" type="button">Browse</button></a>
+        <a routerLink="/auth"><button type="button">Sign in</button></a>
+      </div>
     }
   </header>
 
