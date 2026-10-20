@@ -55,12 +55,16 @@ export class WarmUpService {
   }
 
   // A 2xx completes the probe (awake). Retry (after 5s) on anything that means "not ready":
-  // the gateway's 401 (health not public yet / refused), a 5xx, no connection (status 0), or a
-  // per-attempt timeout. Any other status (e.g. 404) stops — retrying it would never succeed.
+  // the gateway's 401 (health not public yet / refused), a 429 (Render's edge rate-limits requests
+  // to a hibernating service while it wakes — `x-render-routing: hibernate-rate-limited`), a 5xx, no
+  // connection (status 0), or a per-attempt timeout. Retrying the 429 is what lets this wake a cold
+  // GATEWAY: those requests are throttled at the edge before reaching the app, so we must keep poking
+  // until it boots. Any other status (e.g. 404) stops — retrying it would never succeed.
   private retryWhileNotReady(error: unknown): Observable<number> {
     const status = error instanceof HttpErrorResponse ? error.status : undefined;
     const timedOut = (error as { name?: string })?.name === 'TimeoutError';
-    if (timedOut || status === 0 || status === 401 || status === 502 || status === 503 || status === 504) {
+    if (timedOut || status === 0 || status === 401 || status === 429
+        || status === 502 || status === 503 || status === 504) {
       return timer(5000);
     }
     throw error;

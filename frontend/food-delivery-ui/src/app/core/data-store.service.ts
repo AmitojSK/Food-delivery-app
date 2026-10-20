@@ -1,11 +1,16 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { Observable, catchError, forkJoin, of } from 'rxjs';
 import { FoodDeliveryApi } from './food-delivery-api';
+import { WarmUpService } from './warm-up.service';
 import { FoodItem, Order, Restaurant, User } from './models';
 
 @Injectable({ providedIn: 'root' })
 export class DataStore {
   private readonly api = inject(FoodDeliveryApi);
+  // Exposed so the browse view can show "Waking the kitchen… (n/6)" progress during a cold start.
+  readonly warm = inject(WarmUpService);
+  // Auto-warm the backends at most once per cold-browse session; after that the user drives retries.
+  private hasAutoWarmed = false;
 
   readonly restaurants = signal<Restaurant[]>([]);
   readonly foodItems = signal<FoodItem[]>([]);
@@ -56,9 +61,35 @@ export class DataStore {
         this.cacheBrowse();
       },
       error: (error: unknown) => {
+        // A fully-cold stack is 429'd/5xx'd at the edge before a request can reach an origin, and the
+        // bounded fetch retry can't outlast the gateway's own ~90s cold start. So on the first failure,
+        // wake the backends via their health endpoints (which also wakes the gateway) and re-fetch —
+        // the reliable path when nothing is awake yet. Only after that fails do we show the panel.
+        if (!this.hasAutoWarmed) {
+          this.hasAutoWarmed = true;
+          this.warmAndReloadBrowse();
+          return;
+        }
         this.browseBusy.set(isRateLimited(error));
         this.browseState.set('error');
       }
+    });
+  }
+
+  /**
+   * Recover a cold-start failure: ping every backend's health endpoint (through the gateway's public
+   * health routes, which wakes the gateway itself too) until they answer, then reload the catalogue.
+   * This is the reliable path when the whole stack is asleep, since Render's edge rate-limits requests
+   * to a hibernating service and a normal fetch can't outlast its cold start. Also the "Try again"
+   * action. The browse view shows live "Waking the kitchen… (n/6)" progress via `warm` while it runs.
+   */
+  warmAndReloadBrowse(): void {
+    if (this.warm.status() === 'warming') return; // a warm is already in flight; it will reload on completion
+    this.browseState.set('loading');
+    this.browseBusy.set(false);
+    this.warm.warmUp().subscribe({
+      next: () => this.loadBrowse(),
+      error: () => this.browseState.set('error')
     });
   }
 

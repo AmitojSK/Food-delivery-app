@@ -71,7 +71,10 @@ export class FoodDeliveryApi {
   browseRestaurants(): Observable<Restaurant[]> {
     return this.http
       .get<Restaurant[]>('/restaurant-api/api/v1/restaurants')
-      .pipe(coldStartRetry({ count: 5, firstBackoffMs: 2_000 }), catchError(handleApiError));
+      // Few, quick retries: a request that reaches a waking origin still hangs through to 200 (that's
+      // not a retry), so this only bounds how long we tolerate instant edge-429s before the caller
+      // hands off to the more reliable warm-up path. Short, so "Waking the kitchen…" shows promptly.
+      .pipe(coldStartRetry({ count: 2, firstBackoffMs: 2_000 }), catchError(handleApiError));
   }
 
   // Owner-scoped: the restaurants belonging to the authenticated RESTAURANT_OWNER.
@@ -97,7 +100,8 @@ export class FoodDeliveryApi {
   browseFoodItems(): Observable<FoodItem[]> {
     return this.http
       .get<FoodItem[]>('/catalogue-api/api/v1/food-items')
-      .pipe(coldStartRetry({ count: 5, firstBackoffMs: 2_000 }), catchError(handleApiError));
+      // Short like browseRestaurants (imagery is non-blocking anyway); the warm-up path is the real recovery.
+      .pipe(coldStartRetry({ count: 2, firstBackoffMs: 2_000 }), catchError(handleApiError));
   }
 
   createFoodItem(request: CreateFoodItemRequest): Observable<FoodItem> {

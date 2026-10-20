@@ -20,7 +20,14 @@ import { RoleNudgeComponent } from './role-nudge.component';
 
       @switch (store.browseState()) {
         @case ('loading') {
-          <div class="loading-inline"><span class="spinner"></span> Loading restaurants…</div>
+          <div class="loading-inline">
+            <span class="spinner"></span>
+            @if (store.warm.status() === 'warming') {
+              Waking the kitchen… ({{ store.warm.ready() }}/{{ store.warm.total() }})
+            } @else {
+              Loading restaurants…
+            }
+          </div>
         }
         @case ('error') {
           <div class="empty cold-start">
@@ -74,10 +81,10 @@ export class RestaurantListComponent {
     swapToFallback(event, label);
   }
 
-  // Re-run the catalogue load; each call self-heals through the backend's cold start with spaced,
-  // bounded retries, so this doubles as "wake + load" (reached only after the first load's retries
-  // were exhausted).
+  // "Try again" after a failure: wake the whole stack via its health endpoints (which also wakes a
+  // cold gateway — the case a plain re-fetch can't recover, since those requests are 429'd at the
+  // edge before reaching an origin), then reload the catalogue.
   protected reload(): void {
-    this.store.loadBrowse();
+    this.store.warmAndReloadBrowse();
   }
 }
