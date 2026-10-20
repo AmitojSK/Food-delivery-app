@@ -26,6 +26,15 @@ export class DataStore {
    * user's manual retry is one request at a time. A rate-limit (429) gets a "busy, wait" message.
    */
   loadBrowse(): void {
+    // Reuse a recent fetch — the catalogue is near-static, so reloads within the TTL serve from
+    // cache with no network call (so repeated page loads don't pile up requests on the edge).
+    const cached = readBrowseCache();
+    if (cached) {
+      this.restaurants.set(cached.restaurants);
+      this.foodItems.set(cached.foodItems);
+      this.browseState.set('ready');
+      return;
+    }
     this.browseState.set('loading');
     this.browseBusy.set(false);
     forkJoin({
@@ -36,6 +45,7 @@ export class DataStore {
       next: ({ restaurants, foodItems }) => {
         this.restaurants.set(restaurants);
         this.foodItems.set(foodItems);
+        writeBrowseCache(restaurants, foodItems);
         this.browseState.set('ready');
       },
       error: (error: unknown) => {
@@ -68,4 +78,29 @@ export class DataStore {
 function isRateLimited(error: unknown): boolean {
   const message = (error instanceof Error ? error.message : String(error)).toLowerCase();
   return message.includes('429') || message.includes('too many');
+}
+
+// Per-session cache of the (near-static) public catalogue, so reloads don't re-fetch it.
+const BROWSE_CACHE_KEY = 'food-delivery-browse';
+const BROWSE_CACHE_TTL_MS = 5 * 60 * 1000; // 5 min
+
+function readBrowseCache(): { restaurants: Restaurant[]; foodItems: FoodItem[] } | null {
+  try {
+    const raw = sessionStorage.getItem(BROWSE_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { ts?: number; restaurants?: Restaurant[]; foodItems?: FoodItem[] };
+    if (typeof parsed.ts !== 'number' || Date.now() - parsed.ts > BROWSE_CACHE_TTL_MS) return null;
+    if (!Array.isArray(parsed.restaurants) || !Array.isArray(parsed.foodItems)) return null;
+    return { restaurants: parsed.restaurants, foodItems: parsed.foodItems };
+  } catch {
+    return null; // private mode / blocked storage — just skip the cache
+  }
+}
+
+function writeBrowseCache(restaurants: Restaurant[], foodItems: FoodItem[]): void {
+  try {
+    sessionStorage.setItem(BROWSE_CACHE_KEY, JSON.stringify({ ts: Date.now(), restaurants, foodItems }));
+  } catch {
+    // storage unavailable/full — caching is best-effort, ignore
+  }
 }
