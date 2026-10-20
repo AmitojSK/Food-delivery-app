@@ -1,5 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { Observable, catchError, forkJoin, of, retry, timer } from 'rxjs';
+import { Observable, catchError, forkJoin, of } from 'rxjs';
 import { FoodDeliveryApi } from './food-delivery-api';
 import { FoodItem, Order, Restaurant, User } from './models';
 
@@ -20,10 +20,10 @@ export class DataStore {
   readonly browseBusy = signal(false);
 
   /**
-   * Loads the public catalogue (restaurants + menu items). While the backend is cold it keeps
-   * retrying — repeated requests wake the Render instance — staying in the `loading` state until
-   * it's up (~up to 90s), so the UI shows "waking" rather than flashing to an error. A rate limit
-   * (429) is NOT retried (it won't self-heal); it ends in `error` with a "busy, wait" message.
+   * Loads the public catalogue (restaurants + menu items) in a single attempt — no auto-retry, so
+   * a cold load fires just two requests, not a burst (an aggressive retry generated enough volume
+   * to trip the platform edge's rate limiting). On failure the UI shows the "try again" panel; the
+   * user's manual retry is one request at a time. A rate-limit (429) gets a "busy, wait" message.
    */
   loadBrowse(): void {
     this.browseState.set('loading');
@@ -32,15 +32,7 @@ export class DataStore {
       // restaurants is the critical call; menu items are only for imagery, so tolerate their failure.
       restaurants: this.api.listRestaurants(),
       foodItems: this.api.listFoodItems().pipe(catchError(() => of([] as FoodItem[])))
-    }).pipe(
-      retry({
-        count: 15,
-        delay: (error: unknown) => {
-          if (isRateLimited(error)) throw error; // don't retry a 429 — wait it out instead
-          return timer(5000);                    // cold backend: wait, retry (which also wakes it)
-        }
-      })
-    ).subscribe({
+    }).subscribe({
       next: ({ restaurants, foodItems }) => {
         this.restaurants.set(restaurants);
         this.foodItems.set(foodItems);
