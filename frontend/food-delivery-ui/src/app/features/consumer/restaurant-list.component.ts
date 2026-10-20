@@ -74,7 +74,9 @@ export class RestaurantListComponent {
     swapToFallback(event, label);
   }
 
-  // Re-run the catalogue load; it retries while the backend wakes, so this doubles as "wake + load".
+  // Re-run the catalogue load; each call self-heals through the backend's cold start with spaced,
+  // bounded retries, so this doubles as "wake + load" (reached only after the first load's retries
+  // were exhausted).
   protected reload(): void {
     this.store.loadBrowse();
   }

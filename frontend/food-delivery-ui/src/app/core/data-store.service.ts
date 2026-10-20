@@ -20,10 +20,13 @@ export class DataStore {
   readonly browseBusy = signal(false);
 
   /**
-   * Loads the public catalogue (restaurants + menu items) in a single attempt — no auto-retry, so
-   * a cold load fires just two requests, not a burst (an aggressive retry generated enough volume
-   * to trip the platform edge's rate limiting). On failure the UI shows the "try again" panel; the
-   * user's manual retry is one request at a time. A rate-limit (429) gets a "busy, wait" message.
+   * Loads the public catalogue (restaurants + menu items). Both calls self-heal through a free-tier
+   * cold start with spaced, bounded retries (see `coldStartRetry`), so the list stays on the loading
+   * spinner while a sleeping backend wakes instead of flashing a "busy" error — without becoming the
+   * request burst that previously tripped the edge's rate limiting. Restaurants is the critical call
+   * and drives the state; menu-item imagery loads independently so a cold catalogue service (which
+   * wakes separately) can never block or error the restaurant list. Only after the retries are
+   * exhausted does the "try again" panel appear.
    */
   loadBrowse(): void {
     // Reuse a recent fetch — the catalogue is near-static, so reloads within the TTL serve from
@@ -37,22 +40,35 @@ export class DataStore {
     }
     this.browseState.set('loading');
     this.browseBusy.set(false);
-    forkJoin({
-      // restaurants is the critical call; menu items are only for imagery, so tolerate their failure.
-      restaurants: this.api.listRestaurants(),
-      foodItems: this.api.listFoodItems().pipe(catchError(() => of([] as FoodItem[])))
-    }).subscribe({
-      next: ({ restaurants, foodItems }) => {
+
+    // Imagery — off the critical path: a cold catalogue must never hold up or fail the list, so
+    // tolerate its failure (blank-photo fallback) and refresh the cache once it arrives.
+    this.api.browseFoodItems().pipe(catchError(() => of([] as FoodItem[]))).subscribe(foodItems => {
+      this.foodItems.set(foodItems);
+      this.cacheBrowse();
+    });
+
+    // Restaurants — the critical call; drives the browse state.
+    this.api.browseRestaurants().subscribe({
+      next: restaurants => {
         this.restaurants.set(restaurants);
-        this.foodItems.set(foodItems);
-        writeBrowseCache(restaurants, foodItems);
         this.browseState.set('ready');
+        this.cacheBrowse();
       },
       error: (error: unknown) => {
         this.browseBusy.set(isRateLimited(error));
         this.browseState.set('error');
       }
     });
+  }
+
+  // Persist the browse cache once the restaurant list is ready, using whatever imagery has loaded so
+  // far. Called from both loads, so whichever finishes last writes the complete snapshot; a reload in
+  // the brief gap before imagery arrives just re-fetches it.
+  private cacheBrowse(): void {
+    if (this.browseState() === 'ready') {
+      writeBrowseCache(this.restaurants(), this.foodItems());
+    }
   }
 
   loadAdminData(): Observable<{ users: User[]; restaurants: Restaurant[]; foodItems: FoodItem[] }> {

@@ -1,6 +1,6 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, of, retry, tap, throwError, timer } from 'rxjs';
+import { MonoTypeOperatorFunction, Observable, catchError, of, retry, tap, throwError, timer } from 'rxjs';
 import {
   ApiErrorResponse,
   AuthenticationResponse,
@@ -47,27 +47,9 @@ export class FoodDeliveryApi {
     return this.http
       // Cache-bust (_t) belt-and-suspenders against a stale [] (the backend also sends no-store).
       .get<OAuth2Provider[]>('/user-api/api/v1/auth/oauth2/providers', { params: { _t: Date.now() } })
-      .pipe(retry({
-        count: 3,
-        delay: (error: unknown, retryCount: number) => {
-          const status = error instanceof HttpErrorResponse ? error.status : 0;
-          // Cold backend (5xx / no-connection / timeout): quick retry so a waking service self-heals.
-          if (status === 0 || status >= 500) {
-            return timer(3000);
-          }
-          // Rate limited: wait out the cooldown and retry ONCE per step, well-spaced — honour the
-          // server's Retry-After if present, else exponential backoff (5s, 10s, 20s). This never
-          // becomes a tight loop (which is what drains the bucket); after ~3 spaced tries it gives
-          // up and the caller shows a Retry button. So a short 429 self-heals without a click.
-          if (status === 429) {
-            const retryAfterMs = parseRetryAfter(error);
-            const backoffMs = Math.min(20_000, 5_000 * 2 ** (retryCount - 1));
-            return timer(retryAfterMs ?? backoffMs);
-          }
-          // Other 4xx: retrying can't help — propagate so the caller shows a message, not a spinner.
-          throw error;
-        }
-      }), tap(list => writeCachedProviders(list)));
+      // Self-heal through a cold backend / brief edge rate-limit with spaced, bounded retries
+      // (5s, 10s, 20s) — after ~3 tries it gives up and the caller shows a Retry button.
+      .pipe(coldStartRetry({ count: 3, firstBackoffMs: 5_000 }), tap(list => writeCachedProviders(list)));
   }
 
   listUsers(): Observable<User[]> {
@@ -80,6 +62,16 @@ export class FoodDeliveryApi {
 
   listRestaurants(): Observable<Restaurant[]> {
     return this.http.get<Restaurant[]>('/restaurant-api/api/v1/restaurants').pipe(catchError(handleApiError));
+  }
+
+  // Public catalogue, browse page. Unlike listRestaurants (authenticated callers, warm services),
+  // this is the FIRST thing an anonymous visitor hits — restaurant-service is usually asleep, so it
+  // self-heals through the cold start with spaced, bounded retries (2s, 4s, 8s, 16s, 20s). Keeps the
+  // list on the loading spinner while the kitchen wakes instead of flashing a "busy" error.
+  browseRestaurants(): Observable<Restaurant[]> {
+    return this.http
+      .get<Restaurant[]>('/restaurant-api/api/v1/restaurants')
+      .pipe(coldStartRetry({ count: 5, firstBackoffMs: 2_000 }), catchError(handleApiError));
   }
 
   // Owner-scoped: the restaurants belonging to the authenticated RESTAURANT_OWNER.
@@ -97,6 +89,15 @@ export class FoodDeliveryApi {
 
   listFoodItems(): Observable<FoodItem[]> {
     return this.http.get<FoodItem[]>('/catalogue-api/api/v1/food-items').pipe(catchError(handleApiError));
+  }
+
+  // Menu items for the browse page's imagery — food-catalogue-service cold-starts independently of
+  // restaurant-service, so it self-heals on its own (same spaced, bounded retries). The caller loads
+  // it off the critical path so a cold catalogue never blocks or errors the restaurant list.
+  browseFoodItems(): Observable<FoodItem[]> {
+    return this.http
+      .get<FoodItem[]>('/catalogue-api/api/v1/food-items')
+      .pipe(coldStartRetry({ count: 5, firstBackoffMs: 2_000 }), catchError(handleApiError));
   }
 
   createFoodItem(request: CreateFoodItemRequest): Observable<FoodItem> {
@@ -151,6 +152,36 @@ function writeCachedProviders(list: OAuth2Provider[]): void {
   } catch {
     // storage unavailable/full — caching is best-effort, ignore
   }
+}
+
+/**
+ * Retry an HTTP GET through a free-tier cold start without becoming a request burst.
+ *
+ * A sleeping Render service answers with an INSTANT 429 (`x-render-routing: hibernate-rate-limited`)
+ * while its edge throttles wake traffic; the first request that gets through to the origin then hangs
+ * through the ~90s cold start and returns 200. So we retry on 429 / 5xx / no-connection, SPACED
+ * (Retry-After if the server sent one, else exponential backoff capped at 20s) and BOUNDED — never a
+ * tight loop, which is what drains the edge's bucket. Because a request that reaches the origin hangs
+ * rather than failing, retries only accumulate during the brief instant-429 phase (typically 2-4
+ * calls, not `count`). Other 4xx propagate — retrying can't help.
+ */
+function coldStartRetry<T>(opts: { count: number; firstBackoffMs: number }): MonoTypeOperatorFunction<T> {
+  return retry({
+    count: opts.count,
+    delay: (error: unknown, retryCount: number) => {
+      const status = error instanceof HttpErrorResponse ? error.status : 0;
+      if (status === 429) {
+        const retryAfterMs = parseRetryAfter(error);
+        const backoffMs = Math.min(20_000, opts.firstBackoffMs * 2 ** (retryCount - 1));
+        return timer(retryAfterMs ?? backoffMs);
+      }
+      // Cold backend (5xx / no-connection / timeout): quick retry so a waking service self-heals.
+      if (status === 0 || status >= 500) {
+        return timer(3_000);
+      }
+      throw error; // other 4xx: not retryable
+    }
+  });
 }
 
 // Reads a 429's Retry-After header (seconds or an HTTP-date), in ms, capped at 20s so the UI
