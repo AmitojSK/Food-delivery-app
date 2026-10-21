@@ -113,6 +113,12 @@ jobs:
       COMPOSE_PROJECT_NAME: fooddelivery
     steps:
       - uses: actions/checkout@v4
+      # docker-compose interpolates the whole file before it builds anything, and JWT_SECRET is
+      # required with no default (fail-fast, so a real deploy can't ship without it). The value is
+      # irrelevant for `build` — images don't bake env in — so seed the committed example .env just
+      # to satisfy interpolation.
+      - name: Seed build-time env for compose interpolation
+        run: cp .env.example .env
       - run: docker compose build
       - name: Scan built images for HIGH/CRITICAL vulnerabilities
         run: |
