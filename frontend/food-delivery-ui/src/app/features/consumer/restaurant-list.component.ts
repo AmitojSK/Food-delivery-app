@@ -36,7 +36,7 @@ import { RoleNudgeComponent } from './role-nudge.component';
               <p>Too many requests in a short time — wait a few seconds, then try again.</p>
             } @else {
               <h3>Couldn't reach our kitchen</h3>
-              <p>The demo services may be asleep. Tap Try again — it can take a few tries over ~a minute while they wake.</p>
+              <p>The demo services may be asleep. Tap Try again — waking them can take a couple of minutes.</p>
             }
             <div class="cold-actions">
               <button type="button" (click)="reload()">Try again</button>

@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { App } from './app';
 import { FoodDeliveryApi } from './core/food-delivery-api';
@@ -8,6 +9,9 @@ describe('App', () => {
     await TestBed.configureTestingModule({
       imports: [App],
       providers: [
+        // App's template uses routerLink / router-outlet and it injects Router, so the test needs
+        // the router wired up (this also supplies ActivatedRoute). Empty route table is enough.
+        provideRouter([]),
         {
           provide: FoodDeliveryApi,
           useValue: {
