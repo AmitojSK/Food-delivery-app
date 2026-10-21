@@ -9,8 +9,9 @@ export class DataStore {
   private readonly api = inject(FoodDeliveryApi);
   // Exposed so the browse view can show "Waking the kitchen… (n/6)" progress during a cold start.
   readonly warm = inject(WarmUpService);
-  // Auto-warm the backends at most once per cold-browse session; after that the user drives retries.
-  private hasAutoWarmed = false;
+  // True while the warm-and-retry recovery loop is running, so a second trigger doesn't start a
+  // parallel loop and the view stays on the loading state until the catalogue actually loads.
+  private recovering = false;
 
   readonly restaurants = signal<Restaurant[]>([]);
   readonly foodItems = signal<FoodItem[]>([]);
@@ -25,13 +26,12 @@ export class DataStore {
   readonly browseBusy = signal(false);
 
   /**
-   * Loads the public catalogue (restaurants + menu items). Both calls self-heal through a free-tier
-   * cold start with spaced, bounded retries (see `coldStartRetry`), so the list stays on the loading
-   * spinner while a sleeping backend wakes instead of flashing a "busy" error — without becoming the
-   * request burst that previously tripped the edge's rate limiting. Restaurants is the critical call
-   * and drives the state; menu-item imagery loads independently so a cold catalogue service (which
-   * wakes separately) can never block or error the restaurant list. Only after the retries are
-   * exhausted does the "try again" panel appear.
+   * Loads the public catalogue (restaurants + menu items). The fetch self-heals through a brief cold
+   * start with a couple of quick retries (see `coldStartRetry`); if that fails — a fully-cold stack,
+   * where the edge 429s requests before they reach an origin — it hands off to `warmAndReloadBrowse`,
+   * which wakes the backends and loops until the catalogue loads (staying on the "Waking the kitchen…"
+   * state, not the error panel). Restaurants is the critical call and drives the state; menu-item
+   * imagery loads independently so a cold catalogue service can't block or error the restaurant list.
    */
   loadBrowse(): void {
     // Reuse a recent fetch — the catalogue is near-static, so reloads within the TTL serve from
@@ -45,51 +45,66 @@ export class DataStore {
     }
     this.browseState.set('loading');
     this.browseBusy.set(false);
+    this.loadBrowseImagery();
+    // Restaurants is the critical call; on a cold-stack failure, hand off to the warm-and-retry loop.
+    this.loadBrowseRestaurants(() => {}, () => this.warmAndReloadBrowse());
+  }
 
-    // Imagery — off the critical path: a cold catalogue must never hold up or fail the list, so
-    // tolerate its failure (blank-photo fallback) and refresh the cache once it arrives.
+  // Menu-item imagery — off the critical path: a cold catalogue must never hold up or fail the
+  // restaurant list, so tolerate its failure (blank-photo fallback) and refresh the cache on arrival.
+  private loadBrowseImagery(): void {
     this.api.browseFoodItems().pipe(catchError(() => of([] as FoodItem[]))).subscribe(foodItems => {
       this.foodItems.set(foodItems);
       this.cacheBrowse();
     });
+  }
 
-    // Restaurants — the critical call; drives the browse state.
+  // Load the (critical) restaurant list; drives the browse state to 'ready' on success.
+  private loadBrowseRestaurants(onSuccess: () => void, onError: (error: unknown) => void): void {
     this.api.browseRestaurants().subscribe({
       next: restaurants => {
         this.restaurants.set(restaurants);
         this.browseState.set('ready');
         this.cacheBrowse();
+        onSuccess();
       },
-      error: (error: unknown) => {
-        // A fully-cold stack is 429'd/5xx'd at the edge before a request can reach an origin, and the
-        // bounded fetch retry can't outlast the gateway's own ~90s cold start. So on the first failure,
-        // wake the backends via their health endpoints (which also wakes the gateway) and re-fetch —
-        // the reliable path when nothing is awake yet. Only after that fails do we show the panel.
-        if (!this.hasAutoWarmed) {
-          this.hasAutoWarmed = true;
-          this.warmAndReloadBrowse();
-          return;
-        }
-        this.browseBusy.set(isRateLimited(error));
-        this.browseState.set('error');
-      }
+      error: onError
     });
   }
 
   /**
-   * Recover a cold-start failure: ping every backend's health endpoint (through the gateway's public
-   * health routes, which wakes the gateway itself too) until they answer, then reload the catalogue.
-   * This is the reliable path when the whole stack is asleep, since Render's edge rate-limits requests
-   * to a hibernating service and a normal fetch can't outlast its cold start. Also the "Try again"
-   * action. The browse view shows live "Waking the kitchen… (n/6)" progress via `warm` while it runs.
+   * Cold-stack recovery, and the "Try again" action: warm the backends (health pings that also wake
+   * the gateway), then re-fetch — looping until the catalogue loads or the attempt budget runs out.
+   * It stays on the "Waking the kitchen…" loading state across cycles and NEVER flashes the error
+   * panel between attempts (that was the bug: one warm cycle can finish before a service is actually
+   * serving). Each warm cycle persists up to ~3 min (see WarmUpService), so the loop is naturally
+   * paced, not a tight spin — one cycle almost always suffices; the second only covers the rare gap
+   * where health answers but the service isn't serving the catalogue yet.
    */
   warmAndReloadBrowse(): void {
-    if (this.warm.status() === 'warming') return; // a warm is already in flight; it will reload on completion
-    this.browseState.set('loading');
+    if (this.recovering) return; // a recovery loop is already running
+    this.recovering = true;
     this.browseBusy.set(false);
+    this.recoverColdBrowse(0);
+  }
+
+  private recoverColdBrowse(attempt: number): void {
+    const maxAttempts = 2;
+    this.browseState.set('loading'); // keep the spinner / warm progress — do not show the panel yet
     this.warm.warmUp().subscribe({
-      next: () => this.loadBrowse(),
-      error: () => this.browseState.set('error')
+      next: () => this.loadBrowseRestaurants(
+        () => { this.recovering = false; this.loadBrowseImagery(); }, // up → load imagery too
+        (error: unknown) => {
+          if (attempt + 1 < maxAttempts) {
+            this.recoverColdBrowse(attempt + 1); // still not serving → warm again, stay in loading
+          } else {
+            this.recovering = false;
+            this.browseBusy.set(isRateLimited(error));
+            this.browseState.set('error'); // give up only after the budget is exhausted
+          }
+        }
+      ),
+      error: () => { this.recovering = false; this.browseState.set('error'); }
     });
   }
 

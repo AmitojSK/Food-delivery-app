@@ -1,0 +1,20 @@
+name: Warm up services
+
+# Manual trigger only. Tap "Run workflow" on github.com (works in a phone browser) to wake every
+# Render free-tier service before a demo — the runner runs scripts/warm-up.sh, which hits each
+# service's own origin directly (the reliable wake path, no gateway/edge throttling).
+#
+# Deliberately NO schedule: a periodic keep-alive ping would burn the shared 750 free
+# instance-hours/month and get the whole workspace suspended (see interview notes 20-deployment).
+# This is on-demand warming, which costs nothing between runs.
+on:
+  workflow_dispatch:
+
+jobs:
+  warm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Warm all Render services
+        run: bash scripts/warm-up.sh
