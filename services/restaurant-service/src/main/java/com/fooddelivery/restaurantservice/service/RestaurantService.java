@@ -4,6 +4,7 @@ import com.fooddelivery.restaurantservice.dto.CreateRestaurantRequest;
 import com.fooddelivery.restaurantservice.dto.RestaurantResponse;
 import com.fooddelivery.restaurantservice.dto.UpdateRestaurantRequest;
 import com.fooddelivery.restaurantservice.entity.Restaurant;
+import com.fooddelivery.restaurantservice.event.RestaurantEventPublisher;
 import com.fooddelivery.restaurantservice.exception.DuplicateResourceException;
 import com.fooddelivery.restaurantservice.exception.ResourceNotFoundException;
 import com.fooddelivery.restaurantservice.mapper.RestaurantMapper;
@@ -20,10 +21,13 @@ public class RestaurantService {
 
     private final RestaurantRepository restaurantRepository;
     private final RestaurantMapper restaurantMapper;
+    private final RestaurantEventPublisher eventPublisher;
 
-    public RestaurantService(RestaurantRepository restaurantRepository, RestaurantMapper restaurantMapper) {
+    public RestaurantService(RestaurantRepository restaurantRepository, RestaurantMapper restaurantMapper,
+                             RestaurantEventPublisher eventPublisher) {
         this.restaurantRepository = restaurantRepository;
         this.restaurantMapper = restaurantMapper;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -76,6 +80,22 @@ public class RestaurantService {
     })
     public RestaurantResponse updateRestaurant(Long id, UpdateRestaurantRequest request) {
         return applyUpdate(findRestaurant(id), request);
+    }
+
+    /**
+     * Hard-deletes a restaurant and publishes {@code RestaurantDeleted} so food-catalogue-service can
+     * remove the menu items that referenced it. There is no cross-service foreign key (the catalogue
+     * lives in another database), so this event is how the orphaned items are cleaned up.
+     */
+    @Transactional
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "restaurants", key = "#id"),
+            @CacheEvict(cacheNames = "restaurantLists", allEntries = true)
+    })
+    public void deleteRestaurant(Long id) {
+        Restaurant restaurant = findRestaurant(id);
+        restaurantRepository.delete(restaurant);
+        eventPublisher.publishRestaurantDeleted(id);
     }
 
     private RestaurantResponse applyUpdate(Restaurant restaurant, UpdateRestaurantRequest request) {

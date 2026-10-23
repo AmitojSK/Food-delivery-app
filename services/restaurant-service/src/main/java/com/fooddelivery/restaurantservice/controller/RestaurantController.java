@@ -9,6 +9,7 @@ import java.net.URI;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -55,5 +56,14 @@ public class RestaurantController {
             @Valid @RequestBody UpdateRestaurantRequest request
     ) {
         return ResponseEntity.ok(restaurantService.updateRestaurant(id, request));
+    }
+
+    // Hard delete. Publishes RestaurantDeleted so food-catalogue-service removes the orphaned menu
+    // items (no cross-service FK). 204 No Content on success.
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteRestaurant(@PathVariable Long id) {
+        restaurantService.deleteRestaurant(id);
+        return ResponseEntity.noContent().build();
     }
 }

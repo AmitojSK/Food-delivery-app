@@ -15,6 +15,11 @@ spring:
     hibernate:
       ddl-auto: validate
     open-in-view: false
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 
 eureka:
   client:
@@ -23,3 +28,9 @@ eureka:
 security:
   jwt:
     secret: c3ByaW5nLWJvb3QtdXNlci1zZXJ2aWNlLXRlc3Qtc2VjcmV0LTIwMjY=
+
+app:
+  kafka:
+    provision-topics: false
+    topics:
+      restaurant-events: restaurant.events.v1

@@ -27,6 +27,19 @@ spring:
         format_sql: true
   flyway:
     enabled: true
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    # Local Docker Compose uses an unauthenticated broker; deployed environments set these to
+    # SASL_PLAINTEXT/PLAIN plus a JAAS config (the broker there is reachable over the public internet).
+    properties:
+      security.protocol: ${KAFKA_SECURITY_PROTOCOL:PLAINTEXT}
+      sasl.mechanism: ${KAFKA_SASL_MECHANISM:PLAIN}
+      sasl.jaas.config: ${KAFKA_SASL_JAAS_CONFIG:}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    template:
+      observation-enabled: true
 
 management:
   endpoints:
@@ -77,3 +90,8 @@ eureka:
 security:
   jwt:
     secret: ${JWT_SECRET}
+
+app:
+  kafka:
+    topics:
+      restaurant-events: restaurant.events.v1

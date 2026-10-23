@@ -114,6 +114,17 @@ public class FoodItemService {
         return foodItemMapper.toResponse(foodItem);
     }
 
+    /**
+     * Removes every menu item belonging to a restaurant. Called when a {@code RestaurantDeleted}
+     * event arrives — the restaurant lives in another service/database with no cross-service foreign
+     * key, so this is how the orphaned items are cleaned up. Returns the number of items removed.
+     */
+    @Transactional
+    @CacheEvict(cacheNames = "foodItemLists", allEntries = true)
+    public int deleteByRestaurant(Long restaurantId) {
+        return foodItemRepository.deleteByRestaurantId(restaurantId);
+    }
+
     private FoodItem findFoodItem(Long id) {
         return foodItemRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Food item with id " + id + " was not found"));

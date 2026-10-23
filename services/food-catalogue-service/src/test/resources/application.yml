@@ -15,6 +15,20 @@ spring:
     hibernate:
       ddl-auto: validate
     open-in-view: false
+  kafka:
+    # No broker in the unit/web-layer tests: don't start the listener and don't provision topics.
+    listener:
+      auto-startup: false
+    consumer:
+      group-id: food-catalogue-service-test
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.value.default.type: java.util.LinkedHashMap
+        spring.json.trusted.packages: java.util
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 
 eureka:
   client:
@@ -23,3 +37,9 @@ eureka:
 security:
   jwt:
     secret: c3ByaW5nLWJvb3QtdXNlci1zZXJ2aWNlLXRlc3Qtc2VjcmV0LTIwMjY=
+
+app:
+  kafka:
+    provision-topics: false
+    topics:
+      restaurant-events: restaurant.events.v1
