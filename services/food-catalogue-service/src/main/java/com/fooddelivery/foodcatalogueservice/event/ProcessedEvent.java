@@ -22,4 +22,12 @@ public class ProcessedEvent {
     public ProcessedEvent(String eventId) {
         this.eventId = eventId;
     }
+
+    public String getEventId() {
+        return eventId;
+    }
+
+    public Instant getProcessedAt() {
+        return processedAt;
+    }
 }
