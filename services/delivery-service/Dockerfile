@@ -1,4 +1,4 @@
-FROM maven:3.9.9-eclipse-temurin-21 AS build
+FROM maven:3.9-eclipse-temurin-26 AS build
 WORKDIR /build
 COPY pom.xml .
 # Cache-warming for Docker layer caching only — NOT a correctness gate. go-offline over-resolves
