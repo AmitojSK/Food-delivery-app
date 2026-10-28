@@ -1,0 +1,9 @@
+name = "food-delivery-warm"
+main = "src/index.js"
+compatibility_date = "2025-06-01"
+
+# Optional abuse control (the Worker URL is called from a public page):
+#   wrangler secret put WARM_TOKEN      # then call the Worker as  ...workers.dev/?k=<token>
+# NOTE: a token embedded in the public frontend is visible to anyone who views the bundle, so it is
+# weak on its own — prefer a Cloudflare rate-limiting rule on this Worker's route. The endpoint only
+# triggers harmless health pings, so leaving it open is also acceptable for a portfolio demo.

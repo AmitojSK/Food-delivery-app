@@ -76,10 +76,11 @@ export class DataStore {
    * Cold-stack recovery, and the "Try again" action: warm the backends (health pings that also wake
    * the gateway), then re-fetch — looping until the catalogue loads or the attempt budget runs out.
    * It stays on the "Waking the kitchen…" loading state across cycles and NEVER flashes the error
-   * panel between attempts (that was the bug: one warm cycle can finish before a service is actually
-   * serving). Each warm cycle persists up to ~3 min (see WarmUpService), so the loop is naturally
-   * paced, not a tight spin — one cycle almost always suffices; the second only covers the rare gap
-   * where health answers but the service isn't serving the catalogue yet.
+   * panel between attempts. Each cycle triggers the always-on warmer Worker (which fires the wake
+   * pings server-side and returns in ~20s) and then re-fetches; because a cold stack takes ~90s to
+   * boot, it loops a few times — staying on "Waking the kitchen…" — until the catalogue actually
+   * serves. The Worker's `ok/total` climbs across cycles, so the progress count ticks up as services
+   * come online. Only after the attempt budget is spent does the "try again" panel appear.
    */
   warmAndReloadBrowse(): void {
     if (this.recovering) return; // a recovery loop is already running
@@ -89,7 +90,8 @@ export class DataStore {
   }
 
   private recoverColdBrowse(attempt: number): void {
-    const maxAttempts = 2;
+    // ~5 cycles of (worker ~20s + a fetch attempt) ≈ up to ~2 min — enough to outlast the cold boot.
+    const maxAttempts = 5;
     this.browseState.set('loading'); // keep the spinner / warm progress — do not show the panel yet
     this.warm.warmUp().subscribe({
       next: () => this.loadBrowseRestaurants(
