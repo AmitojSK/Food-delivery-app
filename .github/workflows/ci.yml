@@ -40,7 +40,20 @@ jobs:
           java-version: '21'
           distribution: temurin
           cache: maven
-      - run: mvn verify -q
+      # Maven Central intermittently returns HTTP 5xx (seen: 502 resolving
+      # org.apache.kafka:kafka-server-common, a transitive dep of spring-kafka),
+      # which fails the job AND caches the failed resolution as a *.lastUpdated
+      # marker. With `cache: maven` that marker can survive into later runs, so
+      # a single flaky 502 keeps failing until "updates are forced". -U forces
+      # re-resolution past the cached failure; the retry loop rides out the 5xx.
+      - name: Build & verify (resilient to transient Central 5xx)
+        run: |
+          for attempt in 1 2 3; do
+            mvn verify -q -U -Dmaven.wagon.http.retryHandler.count=3 && exit 0
+            echo "mvn verify failed (attempt $attempt/3); retrying in 15s..."
+            sleep 15
+          done
+          exit 1
       - name: Generate SBOM (CycloneDX)
         run: mvn -q org.cyclonedx:cyclonedx-maven-plugin:2.9.1:makeAggregateBom
       - uses: actions/upload-artifact@v4
