@@ -31,14 +31,23 @@ export class WarmUpService {
   readonly ready = signal(0);
   readonly total = signal(0);
 
-  warmUp(): Observable<boolean> {
+  /**
+   * Wakes the backends. Pass `services` (Render service-name prefixes, e.g. `restaurant-service`) to
+   * wake only those — e.g. the public browse flow only needs the gateway + catalogue services, so
+   * there's no point waking (and then having Render health-check every 5s) the rest. Omit it to wake
+   * everything (the auth page's "prime the whole app" wake).
+   */
+  warmUp(services?: string[]): Observable<boolean> {
     if (this.status() === 'warming') {
       return of(false);
     }
     this.status.set('warming');
     this.ready.set(0);
     this.total.set(0);
-    return this.http.get<WarmSummary>(WARM_WORKER_URL).pipe(
+    const url = services && services.length
+      ? `${WARM_WORKER_URL}?services=${encodeURIComponent(services.join(','))}`
+      : WARM_WORKER_URL;
+    return this.http.get<WarmSummary>(url).pipe(
       timeout(30000),
       map(summary => {
         if (typeof summary.total === 'number') this.total.set(summary.total);

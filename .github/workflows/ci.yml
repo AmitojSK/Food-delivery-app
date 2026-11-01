@@ -192,9 +192,10 @@ jobs:
   # skips it — a red pipeline never triggers a deploy.
   #
   # To ACTIVATE (all on the user's side, see interview notes 21-cicd.md):
-  #   1. Reconfigure the 11 Render services to source = "Existing Image"
+  #   1. Reconfigure the 10 deployed Render services to source = "Existing Image"
   #      (ghcr.io/<owner>/food-delivery-app-<name>), ideally via a render.yaml
-  #      Blueprint. Public packages need no pull credential.
+  #      Blueprint. Public packages need no pull credential. (discovery-server /
+  #      Eureka is Compose-only and NOT deployed on Render, so it's excluded here.)
   #   2. Add each service's Render deploy-hook URL as a repo secret named
   #      RENDER_HOOK_<SERVICE> (see the env map below).
   #   3. Set repo variable RENDER_IMAGE_DEPLOYS = true.
@@ -204,7 +205,6 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/develop' && vars.RENDER_IMAGE_DEPLOYS == 'true'
     runs-on: ubuntu-latest
     env:
-      HOOK_discovery_server:      ${{ secrets.RENDER_HOOK_DISCOVERY_SERVER }}
       HOOK_api_gateway:           ${{ secrets.RENDER_HOOK_API_GATEWAY }}
       HOOK_user_service:          ${{ secrets.RENDER_HOOK_USER_SERVICE }}
       HOOK_restaurant_service:    ${{ secrets.RENDER_HOOK_RESTAURANT_SERVICE }}
@@ -226,7 +226,7 @@ jobs:
           # that still fails is recorded so we can fail the job loudly at the end
           # (the others have already been triggered — partial deploy is visible,
           # not silent). We attempt ALL services before failing so one transient
-          # blip doesn't block the other ten.
+          # blip doesn't block the rest.
           deploy_with_retry() {
             local name="$1" hook="$2" img="$3"
             if [ -z "$hook" ]; then
@@ -245,7 +245,8 @@ jobs:
             return 1
           }
 
-          for name in discovery-server api-gateway user-service restaurant-service \
+          # discovery-server (Eureka) is Compose-only and not deployed on Render — excluded.
+          for name in api-gateway user-service restaurant-service \
                       food-catalogue-service order-service delivery-service realtime-service \
                       frontend partner-app delivery-app; do
             hookvar="HOOK_${name//-/_}"

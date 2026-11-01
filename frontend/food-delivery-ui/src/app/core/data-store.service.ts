@@ -1,5 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { Observable, catchError, forkJoin, of } from 'rxjs';
+import { Observable, catchError, forkJoin, of, timer } from 'rxjs';
 import { FoodDeliveryApi } from './food-delivery-api';
 import { WarmUpService } from './warm-up.service';
 import { FoodItem, Order, Restaurant, User } from './models';
@@ -73,41 +73,46 @@ export class DataStore {
   }
 
   /**
-   * Cold-stack recovery, and the "Try again" action: warm the backends (health pings that also wake
-   * the gateway), then re-fetch — looping until the catalogue loads or the attempt budget runs out.
-   * It stays on the "Waking the kitchen…" loading state across cycles and NEVER flashes the error
-   * panel between attempts. Each cycle triggers the always-on warmer Worker (which fires the wake
-   * pings server-side and returns in ~20s) and then re-fetches; because a cold stack takes ~90s to
-   * boot, it loops a few times — staying on "Waking the kitchen…" — until the catalogue actually
-   * serves. The Worker's `ok/total` climbs across cycles, so the progress count ticks up as services
-   * come online. Only after the attempt budget is spent does the "try again" panel appear.
+   * Cold-stack recovery, and the "Try again" action: wake the browse-path backends ONCE, then
+   * re-fetch the catalogue on a timer until it serves or the attempt budget runs out. It stays on
+   * the "Waking the kitchen…" loading state across attempts and NEVER flashes the error panel
+   * between them.
+   *
+   * Two deliberate choices keep the wake-up request volume (and free-tier cost) down — Render
+   * health-checks every *woken* service every 5s for ~15 min, so a needless wake is expensive:
+   *  - Only the services browse needs are woken ({@link BROWSE_SERVICES}); order/delivery/realtime/
+   *    user are left asleep.
+   *  - We ping **once** — a single ping reaches Render's edge and triggers the boot, which continues
+   *    server-side — then only re-FETCH, instead of re-pinging every cycle (the old loop pinged the
+   *    whole stack ~5× per cold start).
    */
   warmAndReloadBrowse(): void {
     if (this.recovering) return; // a recovery loop is already running
     this.recovering = true;
     this.browseBusy.set(false);
-    this.recoverColdBrowse(0);
-  }
-
-  private recoverColdBrowse(attempt: number): void {
-    // ~5 cycles of (worker ~20s + a fetch attempt) ≈ up to ~2 min — enough to outlast the cold boot.
-    const maxAttempts = 5;
-    this.browseState.set('loading'); // keep the spinner / warm progress — do not show the panel yet
-    this.warm.warmUp().subscribe({
-      next: () => this.loadBrowseRestaurants(
-        () => { this.recovering = false; this.loadBrowseImagery(); }, // up → load imagery too
-        (error: unknown) => {
-          if (attempt + 1 < maxAttempts) {
-            this.recoverColdBrowse(attempt + 1); // still not serving → warm again, stay in loading
-          } else {
-            this.recovering = false;
-            this.browseBusy.set(isRateLimited(error));
-            this.browseState.set('error'); // give up only after the budget is exhausted
-          }
-        }
-      ),
+    this.browseState.set('loading');
+    this.warm.warmUp(BROWSE_SERVICES).subscribe({
+      next: () => this.pollBrowseUntilUp(0),
       error: () => { this.recovering = false; this.browseState.set('error'); }
     });
+  }
+
+  private pollBrowseUntilUp(attempt: number): void {
+    // ~6 fetch attempts ~15s apart (≈90s) outlast the cold boot, without re-pinging the backends.
+    const maxAttempts = 6;
+    this.browseState.set('loading'); // keep the spinner / warm progress — do not show the panel yet
+    this.loadBrowseRestaurants(
+      () => { this.recovering = false; this.loadBrowseImagery(); }, // up → load imagery too
+      (error: unknown) => {
+        if (attempt + 1 < maxAttempts) {
+          timer(BROWSE_POLL_INTERVAL_MS).subscribe(() => this.pollBrowseUntilUp(attempt + 1));
+        } else {
+          this.recovering = false;
+          this.browseBusy.set(isRateLimited(error));
+          this.browseState.set('error'); // give up only after the budget is exhausted
+        }
+      }
+    );
   }
 
   // Persist the browse cache once the restaurant list is ready, using whatever imagery has loaded so
@@ -143,6 +148,13 @@ function isRateLimited(error: unknown): boolean {
   const message = (error instanceof Error ? error.message : String(error)).toLowerCase();
   return message.includes('429') || message.includes('too many');
 }
+
+// The public browse flow only needs these services; waking the rest just burns free-tier hours and
+// adds Render's every-5s health checks to services the visitor isn't using. Names are Render
+// service-name prefixes the warmer Worker matches on.
+const BROWSE_SERVICES = ['api-gateway', 'restaurant-service', 'food-catalogue-service'];
+// Gap between catalogue re-fetch attempts during a cold-start recovery (no re-pinging in between).
+const BROWSE_POLL_INTERVAL_MS = 15_000;
 
 // Per-session cache of the (near-static) public catalogue, so reloads don't re-fetch it.
 const BROWSE_CACHE_KEY = 'food-delivery-browse';

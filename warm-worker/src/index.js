@@ -46,7 +46,24 @@ export default {
       }
     }
 
-    const services = await Promise.all(TARGETS.map(ping));
+    // Optional `?services=` filter (comma-separated Render service-name prefixes, e.g.
+    // `api-gateway,restaurant-service,food-catalogue-service`). Callers that only need part of the
+    // stack (the public browse flow) pass a subset so we don't wake — and make Render health-check
+    // every 5s — services the visitor isn't using. No/empty/unknown filter => wake everything.
+    const requested = (new URL(request.url).searchParams.get('services') ?? '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    let targets = TARGETS;
+    if (requested.length) {
+      const subset = TARGETS.filter((url) => {
+        const host = new URL(url).hostname;
+        return requested.some((name) => host.startsWith(name));
+      });
+      if (subset.length) targets = subset; // unknown names => fall back to all, never ping nothing
+    }
+
+    const services = await Promise.all(targets.map(ping));
     const ok = services.filter((s) => s.ok).length;
     return json({ ok, total: services.length, services }, 200, cors);
   },
