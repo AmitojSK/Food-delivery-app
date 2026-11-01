@@ -179,3 +179,83 @@ jobs:
             push_with_retry "$target:${{ github.sha }}"
             push_with_retry "$target:$branch"
           done
+
+  # --- Image-based deploy to Render (DORMANT until opted in) ---------------------
+  # This job implements "build once, deploy the same image": instead of Render
+  # rebuilding each service from source, Render pulls the exact image this run
+  # built + Trivy-scanned + pushed above, pinned to the commit SHA.
+  #
+  # It is SAFE to merge while services are still build-from-source: it only runs
+  # when the repo variable RENDER_IMAGE_DEPLOYS == 'true' (unset by default →
+  # skipped). `needs: [docker]` means it can only fire when build+scan+push all
+  # succeeded, and the implicit success() on its `if:` means any earlier failure
+  # skips it — a red pipeline never triggers a deploy.
+  #
+  # To ACTIVATE (all on the user's side, see interview notes 21-cicd.md):
+  #   1. Reconfigure the 11 Render services to source = "Existing Image"
+  #      (ghcr.io/<owner>/food-delivery-app-<name>), ideally via a render.yaml
+  #      Blueprint. Public packages need no pull credential.
+  #   2. Add each service's Render deploy-hook URL as a repo secret named
+  #      RENDER_HOOK_<SERVICE> (see the env map below).
+  #   3. Set repo variable RENDER_IMAGE_DEPLOYS = true.
+  deploy:
+    name: deploy-to-render
+    needs: [docker]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop' && vars.RENDER_IMAGE_DEPLOYS == 'true'
+    runs-on: ubuntu-latest
+    env:
+      HOOK_discovery_server:      ${{ secrets.RENDER_HOOK_DISCOVERY_SERVER }}
+      HOOK_api_gateway:           ${{ secrets.RENDER_HOOK_API_GATEWAY }}
+      HOOK_user_service:          ${{ secrets.RENDER_HOOK_USER_SERVICE }}
+      HOOK_restaurant_service:    ${{ secrets.RENDER_HOOK_RESTAURANT_SERVICE }}
+      HOOK_food_catalogue_service: ${{ secrets.RENDER_HOOK_FOOD_CATALOGUE_SERVICE }}
+      HOOK_order_service:         ${{ secrets.RENDER_HOOK_ORDER_SERVICE }}
+      HOOK_delivery_service:      ${{ secrets.RENDER_HOOK_DELIVERY_SERVICE }}
+      HOOK_realtime_service:      ${{ secrets.RENDER_HOOK_REALTIME_SERVICE }}
+      HOOK_frontend:              ${{ secrets.RENDER_HOOK_FRONTEND }}
+      HOOK_partner_app:           ${{ secrets.RENDER_HOOK_PARTNER_APP }}
+      HOOK_delivery_app:          ${{ secrets.RENDER_HOOK_DELIVERY_APP }}
+    steps:
+      - name: Trigger Render redeploys of the just-pushed images
+        run: |
+          owner=$(printf '%s' "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          failed=0
+
+          # Render's deploy-hook URL already carries ?key=..., so the image to
+          # deploy is appended as &imgURL=... Each attempt is retried; a service
+          # that still fails is recorded so we can fail the job loudly at the end
+          # (the others have already been triggered — partial deploy is visible,
+          # not silent). We attempt ALL services before failing so one transient
+          # blip doesn't block the other ten.
+          deploy_with_retry() {
+            local name="$1" hook="$2" img="$3"
+            if [ -z "$hook" ]; then
+              echo "::error::No deploy-hook secret set for $name (RENDER_HOOK_... missing)"
+              return 1
+            fi
+            for attempt in 1 2 3; do
+              if curl -fsS "${hook}&imgURL=${img}" >/dev/null; then
+                echo "Triggered deploy: $name -> $img"
+                return 0
+              fi
+              echo "Deploy trigger for $name failed (attempt $attempt/3); retrying in 10s..."
+              sleep 10
+            done
+            echo "::error::Deploy trigger for $name failed after 3 attempts"
+            return 1
+          }
+
+          for name in discovery-server api-gateway user-service restaurant-service \
+                      food-catalogue-service order-service delivery-service realtime-service \
+                      frontend partner-app delivery-app; do
+            hookvar="HOOK_${name//-/_}"
+            # Deploy the exact SHA-tagged image this run pushed (immutable per commit).
+            # For maximum strictness, swap the tag for the @sha256 digest captured at push time.
+            img="ghcr.io/$owner/food-delivery-app-$name:${{ github.sha }}"
+            deploy_with_retry "$name" "${!hookvar}" "$img" || failed=1
+          done
+
+          if [ "$failed" -ne 0 ]; then
+            echo "::error::One or more Render deploys failed — those services may be on a stale image (version skew). Re-run this job or roll back by redeploying the previous digest."
+            exit 1
+          fi
