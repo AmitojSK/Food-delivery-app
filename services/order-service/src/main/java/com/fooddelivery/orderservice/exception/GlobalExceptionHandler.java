@@ -1,5 +1,6 @@
 package com.fooddelivery.orderservice.exception;
 
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import java.util.LinkedHashMap;
@@ -12,6 +13,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -39,6 +41,24 @@ public class GlobalExceptionHandler {
         exception.getBindingResult().getFieldErrors()
                 .forEach(error -> fieldErrors.put(error.getField(), error.getDefaultMessage()));
         return buildResponse(HttpStatus.BAD_REQUEST, "Request validation failed", request, fieldErrors);
+    }
+
+    // Circuit breaker is OPEN — a downstream validation service (restaurant/catalogue) is failing, so
+    // we fail fast instead of blocking an order thread. 503 = "try again shortly", not a 500 bug.
+    @ExceptionHandler(CallNotPermittedException.class)
+    ResponseEntity<ApiErrorResponse> handleCircuitOpen(CallNotPermittedException exception, HttpServletRequest request) {
+        log.warn("Circuit open, failing fast for {}: {}", request.getRequestURI(), exception.getMessage());
+        return buildResponse(HttpStatus.SERVICE_UNAVAILABLE,
+                "A required service is temporarily unavailable; please try again shortly", request, Map.of());
+    }
+
+    // Transport failure reaching a downstream service (connection refused / timeout). Maps to 503
+    // rather than a generic 500 — the request is fine, the dependency is unreachable.
+    @ExceptionHandler(WebClientRequestException.class)
+    ResponseEntity<ApiErrorResponse> handleDownstreamUnreachable(WebClientRequestException exception, HttpServletRequest request) {
+        log.warn("Downstream unreachable for {}: {}", request.getRequestURI(), exception.getMessage());
+        return buildResponse(HttpStatus.SERVICE_UNAVAILABLE,
+                "A required service is temporarily unavailable; please try again shortly", request, Map.of());
     }
 
     @ExceptionHandler(Exception.class)

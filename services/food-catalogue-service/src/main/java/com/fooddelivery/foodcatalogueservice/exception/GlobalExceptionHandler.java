@@ -1,5 +1,6 @@
 package com.fooddelivery.foodcatalogueservice.exception;
 
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import java.util.LinkedHashMap;
@@ -10,6 +11,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -30,6 +32,14 @@ public class GlobalExceptionHandler {
         exception.getBindingResult().getFieldErrors()
                 .forEach(error -> fieldErrors.put(error.getField(), error.getDefaultMessage()));
         return buildResponse(HttpStatus.BAD_REQUEST, "Request validation failed", request, fieldErrors);
+    }
+
+    // Circuit breaker OPEN / downstream (restaurant-service) unreachable — fail fast with 503
+    // ("try again shortly") instead of blocking the thread or returning a generic 500.
+    @ExceptionHandler({CallNotPermittedException.class, WebClientRequestException.class})
+    ResponseEntity<ApiErrorResponse> handleDownstreamUnavailable(Exception exception, HttpServletRequest request) {
+        return buildResponse(HttpStatus.SERVICE_UNAVAILABLE,
+                "A required service is temporarily unavailable; please try again shortly", request, Map.of());
     }
 
     @ExceptionHandler(Exception.class)

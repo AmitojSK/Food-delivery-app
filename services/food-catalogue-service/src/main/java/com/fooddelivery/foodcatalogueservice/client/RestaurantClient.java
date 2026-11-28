@@ -1,5 +1,6 @@
 package com.fooddelivery.foodcatalogueservice.client;
 
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -15,6 +16,7 @@ public class RestaurantClient {
         client = builder.baseUrl(restaurantServiceUri).build();
     }
 
+    @CircuitBreaker(name = "restaurant-service")
     public RestaurantOwnership getRestaurant(Long restaurantId) {
         return client.get().uri("/api/v1/restaurants/{id}", restaurantId).retrieve()
                 .bodyToMono(RestaurantOwnership.class).block();

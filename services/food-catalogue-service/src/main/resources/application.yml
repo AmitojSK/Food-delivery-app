@@ -110,3 +110,21 @@ app:
       backoff-ms: 1000
     topics:
       restaurant-events: restaurant.events.v1
+
+# Circuit breaker for the synchronous call to restaurant-service (RestaurantClient). Trips on
+# TRANSPORT failures (connection refused / timeout) — NOT on HTTP 4xx/5xx responses — so a
+# slow/down restaurant-service fails FAST instead of blocking the thread for the full timeout.
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 20s
+        permitted-number-of-calls-in-half-open-state: 2
+        automatic-transition-from-open-to-half-open-enabled: true
+        register-health-indicator: false   # an open breaker must NOT flip /actuator/health DOWN (would trigger a Render restart)
+        ignore-exceptions:
+          - org.springframework.web.reactive.function.client.WebClientResponseException

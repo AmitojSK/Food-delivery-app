@@ -1,5 +1,6 @@
 package com.fooddelivery.orderservice.client;
 
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
@@ -28,6 +29,7 @@ public class ServiceClient {
                 .build();
     }
 
+    @CircuitBreaker(name = "restaurant-service")
     public RestaurantResponse getRestaurant(Long id) {
         return restaurantClient.get()
                 .uri("/api/v1/restaurants/{id}", id)
@@ -38,6 +40,7 @@ public class ServiceClient {
                 .block();
     }
 
+    @CircuitBreaker(name = "food-catalogue-service")
     public FoodItemResponse getFoodItem(Long id) {
         return catalogueClient.get()
                 .uri("/api/v1/food-items/{id}", id)
